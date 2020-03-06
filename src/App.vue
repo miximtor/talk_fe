@@ -1,7 +1,7 @@
 <template>
     <div id="app">
         <Login @login="onLogin" v-if="!login_success"></Login>
-        <Chat @quit="onQuit" v-else></Chat>
+        <Chat :personal_info="personal_info" @quit="onQuit" v-else></Chat>
     </div>
 </template>
 
@@ -15,6 +15,10 @@
         data() {
             return {
                 login_success: false,
+                personal_info: {
+                    avatar: 'https://file.iviewui.com/dist/d6fcbeecd3f5ff1b1dd0a0f68bdf6ce7.svg',
+                    nick: 'max wong'
+                }
             }
         },
         methods: {
@@ -41,7 +45,7 @@
                 setTimeout(() => {
                     self.login_success = true;
                     self.$Spin.hide();
-                }, 3000);
+                }, 1000);
             }
         }
     }

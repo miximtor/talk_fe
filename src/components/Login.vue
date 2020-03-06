@@ -38,14 +38,13 @@
                   login_id: '',
                   login_password: ''
               },
-              login_text: '登录'
           }
         },
 
         methods: {
             onLogin() {
                 let self = this;
-                self.$emit('login');
+                self.$emit('login', self.login_form);
             }
         }
     }
