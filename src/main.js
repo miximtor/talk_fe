@@ -11,5 +11,10 @@ Vue.use(VueResource);
 
 new Vue({
   render: h => h(App),
+  http: {
+    headers: {
+      ContentType: 'application/json'
+    }
+  }
 }).$mount('#app');
 
