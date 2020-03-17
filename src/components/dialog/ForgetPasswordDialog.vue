@@ -1,17 +1,7 @@
 <template>
     <modal name="forget-password-dialog" styles="display: flex; flex-direction: column" height="auto">
-        <div id="top">
-            <div>
-            </div>
-            <div id="title">
-                <span>找回密码</span>
-            </div>
-            <div style="display: flex;flex-direction: row-reverse">
-                <iv-button type="text" @click="$modal.hide('forget-password-dialog')">
-                    ❌
-                </iv-button>
-            </div>
-        </div>
+        <DialogTop name="forget-password-dialog" title="找回密码"></DialogTop>
+
         <div id="forget-password">
             <div v-if="current_page === 0">
                 <iv-form ref="forget_password_form"
@@ -66,10 +56,12 @@
 </template>
 
 <script>
-    import {axios, handle_response} from "@/components/util/Connection";
+    import {axios, handle_response} from "@/util/connection";
+    import DialogTop from "@/components/dialog/DialogTop";
 
     export default {
         name: "ForgetPasswordDialog",
+        components: {DialogTop},
         data() {
             return {
                 current_page: 0,
@@ -161,21 +153,5 @@
         justify-content: center;
     }
 
-    #top {
-        display: grid;
-        grid-template-columns: repeat(3, 33.33%);
-        align-items: center;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-
-    #title {
-        font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-        font-size: 22px;
-        color: #464c5b;
-        font-weight: bold;
-        display: flex;
-        justify-content: center;
-    }
 
 </style>

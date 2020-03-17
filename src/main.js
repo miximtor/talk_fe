@@ -1,20 +1,45 @@
 import Vue from 'vue'
 import App from './App.vue'
-import ViewUI from 'view-design';
+
+import store from './store';
+
+import {Form, FormItem, Input, Icon, Button, ButtonGroup, Upload, Spin, Divider, Avatar, Menu, MenuItem, Poptip} from "view-design";
+import {List, Tabs, TabPane, Notice} from 'view-design';
+
 import 'view-design/dist/styles/iview.css';
 
-import VueResource from 'vue-resource';
+import PerfectScrollbar from 'vue2-perfect-scrollbar'
+import 'vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css'
+
+import VModal from 'vue-js-modal'
+
 
 Vue.config.productionTip = false;
-Vue.use(ViewUI);
-Vue.use(VueResource);
+Vue.prototype.$Spin = Spin;
+Vue.prototype.$Notice = Notice;
+
+Vue.component('iv-form', Form);
+Vue.component('iv-form-item', FormItem);
+Vue.component('iv-input', Input);
+Vue.component('iv-icon', Icon);
+Vue.component('iv-button', Button);
+Vue.component('iv-button-group', ButtonGroup);
+Vue.component('iv-upload', Upload);
+Vue.component('iv-divider', Divider);
+Vue.component('iv-avatar', Avatar);
+Vue.component('iv-menu', Menu);
+Vue.component('iv-menu-item', MenuItem);
+Vue.component('iv-poptip', Poptip);
+Vue.component('iv-list', List);
+Vue.component('iv-list-item', List.Item);
+Vue.component('iv-tabs', Tabs);
+Vue.component('iv-tab-pane', TabPane);
+
+Vue.use(PerfectScrollbar);
+Vue.use(VModal);
 
 new Vue({
-  render: h => h(App),
-  http: {
-    headers: {
-      ContentType: 'application/json'
-    }
-  }
+    render: h => h(App),
+    store
 }).$mount('#app');
 

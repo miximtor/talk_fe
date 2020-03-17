@@ -1,17 +1,6 @@
 <template>
     <modal name="register-dialog" height="auto" :clickToClose="false" styles="display: flex; flex-direction: column">
-        <div id="top">
-            <div>
-            </div>
-            <div id="title">
-                <span>注册</span>
-            </div>
-            <div style="display: flex;flex-direction: row-reverse">
-                <iv-button type="text" @click="$modal.hide('register-dialog')">
-                    ❌
-                </iv-button>
-            </div>
-        </div>
+        <DialogTop name="register-dialog" title="账号注册"></DialogTop>
 
         <div id="register">
             <div v-if="current_page===0">
@@ -117,7 +106,8 @@
                 <iv-button type="primary" @click="current_page--" :disabled="current_page<=0"
                            style="height: 40px; font-size: 16px">上一步
                 </iv-button>
-                <iv-button type="primary" @click.native="step(current_page)" style="height: 40px; font-size: 16px">{{current_page === 2?'立即注册':'下一步'}}
+                <iv-button type="primary" @click.native="step(current_page)" style="height: 40px; font-size: 16px">
+                    {{current_page === 2?'立即注册':'下一步'}}
                 </iv-button>
             </iv-button-group>
         </div>
@@ -126,11 +116,13 @@
 </template>
 
 <script>
-    import {axios, handle_response} from "@/components/util/Connection";
+    import {axios, handle_response} from "@/util/connection";
     import AvatarUploader from "@/components/util/AvatarUploader";
+    import DialogTop from "@/components/dialog/DialogTop";
+    import {account} from "@/api/account";
 
     export default {
-        components: {AvatarUploader},
+        components: {DialogTop, AvatarUploader},
         name: "RegisterDialog",
 
         data() {
@@ -173,24 +165,20 @@
 
         methods: {
             async login_id_validator(rule, value, callback) {
-                try {
-                    if (!value.match(/^[a-zA-Z_][a-zA-Z0-9_]{5,20}$/i)) {
-                        return callback(new Error('用户名不合法(5-20个字母数字，下划线)'))
-                    }
-                    await axios.post('/account/checkloginid', {login_id: value}).then(handle_response);
-                    return callback();
-                } catch (e) {
-                    return callback(e);
+                if (!value.match(/^[a-zA-Z_][a-zA-Z0-9_]{5,20}$/i)) {
+                    throw new Error('用户名不合法(5-20个字母数字，下划线)');
                 }
+
+                await axios.post('/account/checkloginid', {login_id: value}).then(handle_response);
+                return callback();
             },
 
             login_password_validator(rule, value, callback) {
                 let login_password_regex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-.]).{8,20}$/gm;
                 if (!value.match(login_password_regex)) {
-                    return callback(new Error('必须包含大/小写字母，数字、特殊字符（$?!@$%^&*-.）长度8-20个字符'))
-                } else {
-                    return callback();
+                    throw new Error('必须包含大/小写字母，数字、特殊字符（$?!@$%^&*-.）长度8-20个字符');
                 }
+                return callback();
             },
 
             login_password_confirm_validator(rule, value, callback) {
@@ -213,47 +201,38 @@
                 self.register_form.avatar = url;
             },
 
-            step(n) {
+            async step(n) {
                 let self = this;
-                self.$refs[`register_form${n}`].validate(valid => {
-                    if (!valid) {
-                        return
-                    }
-                    if (n < 2) {
-                        self.current_page = n + 1;
-                        return;
-                    }
+                await self.$refs[`register_form${n}`].validate();
 
-                    self.handle_register();
+                if (n < 2) {
+                    self.current_page = n + 1;
+                    return;
+                }
 
-                    self.register_form = {
-                        login_id: '',
-                        login_password: '',
-                        login_password_confirm: '',
-                        email: '',
-                        phone: '',
-                        avatar: '',
-                        nick: '',
-                        question1: '',
-                        answer1: '',
-                        question2: '',
-                        answer2: '',
-                        question3: '',
-                        answer3: '',
-                    }
-                });
+                await self.handle_register();
+                self.register_form = {
+                    login_id: '',
+                    login_password: '',
+                    login_password_confirm: '',
+                    email: '',
+                    phone: '',
+                    avatar: '',
+                    nick: '',
+                    question1: '', answer1: '',
+                    question2: '', answer2: '',
+                    question3: '', answer3: '',
+                }
             },
 
             async handle_register() {
                 let self = this;
                 try {
-                    await axios.post('/account/register', self.register_form).then(handle_response);
-                    self.$modal.show('error-dialog', {
-                        content: '注册成功',
-                        type: 'primary'
-                    });
+                    await account.register(self.register_form);
                     self.$modal.hide('register-dialog');
-                    self.$emit('register', self.register_form);
+                    self.$Notice.info({
+                        title: '注册成功'
+                    });
                 } catch (e) {
                     self.$modal.show('error-dialog', {
                         title: '注册失败',
@@ -272,20 +251,4 @@
         padding-right: 20px;
     }
 
-    #top {
-        display: grid;
-        grid-template-columns: repeat(3, 33.33%);
-        align-items: center;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-
-    #title {
-        font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
-        font-size: 22px;
-        color: #464c5b;
-        font-weight: bold;
-        display: flex;
-        justify-content: center;
-    }
 </style>
