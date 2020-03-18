@@ -2,31 +2,51 @@
     <div id="mic">
         <div id="pop">
         </div>
-        <button @click="on_mic_click">
+        <button @click="on_mic_click" :disabled="mic.state === 'OPENING' || mic.state === 'CLOSING'">
             <i :class="mic.icon" :style="mic.style"></i>
         </button>
     </div>
 </template>
 
 <script>
+    const MicRecorder = require('mic-recorder-to-mp3');
 
     const CLOSE = 'close';
     const OPENING = 'opening';
     const OPEN = 'open';
     const CLOSING = 'closing';
 
+    const MIC_CLOSE = {
+        icon: 'ivu-icon ivu-icon-md-mic',
+        style: 'vertical-align: unset; color: gray',
+        state: CLOSE,
+    };
+
+    const MIC_OPENING = {
+        icon: 'ivu-icon ivu-icon-md-mic',
+        style: 'vertical-align: unset; color: gray',
+        state: OPENING,
+    };
+
+    const MIC_OPEN = {
+        icon: 'ivu-icon ivu-icon-md-mic',
+        style: 'vertical-align: unset; color: rgb(64, 167, 227)',
+        state: OPEN
+    };
+
+    const MIC_CLOSING = {
+        icon: 'ivu-icon ivu-icon-md-mic',
+        style: 'vertical-align: unset; color: rgb(64, 167, 227)',
+        state: CLOSING
+    };
+
     export default {
         name: "Mic",
 
         data() {
             return {
-                mic: {
-                    icon: 'ivu-icon ivu-icon-md-mic-off',
-                    style: 'vertical-align: unset; color: gray',
-                    state: CLOSE,
-                },
-                chunk: [],
-                recorder: null
+                mic: MIC_CLOSE,
+                recorder: new MicRecorder({bitRate: 8})
             }
         },
 
@@ -35,67 +55,46 @@
                 let self = this;
                 switch (self.mic.state) {
                     case CLOSE:
-                        self.mic.state = OPENING;
-                        if (!(await self.configure_recorder())) {
-                            self.mic.state = CLOSE;
+                        self.mic = MIC_OPENING;
+                        if (!await self.start_recorder()) {
+                            self.mic = MIC_CLOSE;
                             return;
                         }
-                        self.mic.state = OPEN;
-                        self.mic.icon = 'ivu-icon ivu-icon-md-mic';
-                        self.mic.style = 'vertical-align: unset; color: rgb(64, 167, 227)';
-                        self.$emit('record-start');
-                        self.recorder.start();
-                        break;
-                    case OPENING:
+                        self.mic = MIC_OPEN;
                         break;
                     case OPEN:
-                        self.recorder.stop();
-                        break;
-                    case CLOSING:
+                        self.mic = MIC_CLOSING;
+                        await self.stop_recorder();
+                        self.mic = MIC_CLOSE;
                         break;
                 }
             },
 
-            async configure_recorder() {
+            async start_recorder() {
                 let self = this;
                 try {
-
-                    /*self.voice.stream = await navigator.mediaDevices.getUserMedia({audio: true, video: false});
-                    self.voice.recorder = new
-                    console.log(self.mic.voice.recorder);
-                    self.voice.recorder.ondataavailable = ev => self.mic.voice.chunk.push(ev.data);
-                    self.voice.recorder.onstop = () => {
-                        self.voice.stream.getTracks().forEach(track => track.stop());
-                        const voice = new Blob([self.mic.voice.chunk], {type: 'audio/mpeg'});
-                        self.$emit('record-stop', voice);
-                        self.mic.voice = {
-                            stream: null,
-                            recorder: null,
-                            chunk: []
-                        };
-                    };
-                     */
-                    const Recorder = require('opus-recorder');
-                    self.recorder = new Recorder({
-                        encoderBitRate: 8000,
-                        encoderSampleRate: 8000,
-                        encoderPath: 'https://talk.maxtorm.wtf/dist/encoderWorker.min.js'
-                    });
-                    self.recorder.ondataavailable = data => self.chunk.push(data);
-                    self.recorder.onstop = () => {
-                        const voice = new Blob([self.chunk], {type: 'audio/ogg'});
-                        console.log(voice);
-                        self.$emit('record-stop', voice);
-                        self.chunk = [];
-                    };
+                    await self.recorder.start();
+                    self.$emit('record-start');
                     return true;
                 } catch (e) {
-                    console.log(e);
                     self.$modal.show('error-dialog', {
                         title: '打开麦克风失败',
                         content: '请检查麦克风设备及权限'
                     });
                     return false;
+                }
+            },
+
+            async stop_recorder() {
+                let self = this;
+                try {
+                    const [,voice] = await self.recorder.stop().getMp3();
+                    self.$emit('record-stop', voice);
+                } catch (e) {
+                    self.$modal.show('error-dialog', {
+                        title: '录音失败',
+                        content: '请检查麦克风设备及权限'
+                    });
                 }
             }
         }

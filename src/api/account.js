@@ -16,7 +16,8 @@ class Account {
         try {
             await new Promise((resolve, reject) => {
                 socket.onopen = () => {
-                    socket.onerror = null;
+                    socket.onopen = () => {};
+                    socket.onerror = () => {};
                     resolve();
                 };
 
@@ -30,8 +31,9 @@ class Account {
         return [token, socket];
     }
 
-    async logout(token) {
+    async logout(token, socket) {
         await axios.post('/account/logout', {token: token}).then(handle_response);
+        socket.close(4001, 'client logout');
     }
 
     async register(register_form) {

@@ -1,5 +1,5 @@
 <template>
-    <div id="talk">
+    <div id="talk" v-if="session.login_id">
 
         <div id="top">
             <div id="banner">
@@ -9,7 +9,7 @@
                     <span id="bar">{{session.nick}}</span>
                 </div>
                 <div style="display: flex; justify-content: flex-end">
-                    <button>
+                    <button class="talk_button">
                         <i class="ivu-icon ivu-icon-md-more" style="vertical-align: unset; color: gray"></i>
                     </button>
                 </div>
@@ -18,80 +18,168 @@
         </div>
 
         <div id="content">
+            <MessageViewer
+                :session="session"
+                :messages="messages"
+                :height="content_height">
+
+            </MessageViewer>
         </div>
 
         <div id="bottom">
-            <Mic @record-start="recording = true" @record-stop="on_stop_record_voice"></Mic>
+            <div v-if="recording" style="display: flex;flex-grow: 1;height: 40px;margin-left: 10px; margin-right: 10px">
+                <div style="width: 30px; display: flex; justify-content: center; align-items: center">
+                    <div style="border: 2px solid red; height: 20px; width: 20px; background: red; border-radius: 10px">
+                    </div>
+                </div>
+                <div style="display: flex; margin-left: 10px; width: 80px; justify-content: center; align-items: center">
+                    <span style="font-size: 20px">
+                        {{format_time(record_start_time, record_current_time)}}
+                    </span>
+                </div>
 
-            <div v-if="!recording" style="display: flex;flex-grow: 1">
-                <PerfectScrollbar id="text_input_scroll">
-                    <textarea id="text_input" wrap="soft" @input="resize" v-model="msg.content"/>
-                </PerfectScrollbar>
-
-                <div id="typing_menu">
-                    <iv-upload id="upload" action="" :show-upload-list="false">
-                        <i class="ivu-icon ivu-icon-md-attach" style="vertical-align: unset"></i>
-                    </iv-upload>
-                    <button @click="on_msg_send">
-                        <i class="ivu-icon ivu-icon-md-send" style="vertical-align: unset"></i>
-                    </button>
+                <div style="flex-grow: 1; display: flex">
+                    <iv-button long style="height: 40px" type="primary">取消录音</iv-button>
                 </div>
             </div>
+
+
+            <iv-upload v-if="!recording" id="upload" action="" :show-upload-list="false">
+                <i class="ivu-icon ivu-icon-md-attach" style="vertical-align: unset"></i>
+            </iv-upload>
+
+            <PerfectScrollbar v-if="!recording" id="text_input_scroll">
+                <textarea id="text_input"
+                          wrap="soft"
+                          @input="handle_resize"
+                          v-model="text" placeholder="Write a message ... "
+                          autofocus="autofocus"/>
+            </PerfectScrollbar>
+
+            <button v-if="text"
+                    class="talk_button"
+                    @click="send_text">
+                <i class="ivu-icon ivu-icon-md-send" style="vertical-align: unset"></i>
+            </button>
+
+            <Mic v-if="!text"
+                 @record-start="on_record_start"
+                 @record-stop="on_record_stop">
+            </Mic>
+
         </div>
+
     </div>
+    <div id="talk_no_session" v-else >
+        <span style="font-size: 30px">未选择聊天</span>
+    </div>
+
 </template>
 
 <script>
-    import Mic from '@/components/util/Mic';
     import {media} from "@/api/media";
+    import {v4 as UUIDv4} from 'uuid';
+    import {mapActions} from 'vuex';
+
+    import Mic from '@/components/util/Mic';
+    import MessageViewer from "@/components/util/MessageViewer";
 
     export default {
         name: "Talk",
         props: ['session'],
-        components: {Mic},
-        mounted() {
-            let self = this;
-            const support_wasm = WebAssembly && typeof WebAssembly.instantiate === 'function';
-            const support_user_media = navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
-            self.media_available = support_wasm && support_user_media;
-        },
+        components: {MessageViewer, Mic},
 
         data() {
             return {
                 media_available: false,
-                msg: {
-                    type: 'text',
-                    content: ''
-                },
-                recording: false
+                text: '',
+                recording: false,
+                record_start_time: 0,
+                record_current_time: 0,
+                messages: [
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be6","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073051,"content":"fuck u"},
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be7","from":"maxtorm","to":"maxtorm12138","type":"file","timestamp":1584530073052,"content":"{\"name\": \"FFmpeg-master.zip\", \"url\": \"https://voice-1253676805.cos.ap-guangzhou.myqcloud.com/FFmpeg-master.zip\"}"},
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be8","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073053,"content":"fuck u"},
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be8","from":"maxtorm12138","to":"maxtorm","type":"text","timestamp":1584530073054,"content":"fuck u"},
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be9","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073055,"content":"fuck u,fuck u,fucfuck u,ffuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,uck u,k u,fuck u"},
+                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be1","from":"maxtorm","to":"maxtorm12138","type":"voice","timestamp":1584530074057,"content":"https://voice-1253676805.cos.ap-guangzhou.myqcloud.com/voice-6798840f-eb0e-4827-8fbb-6b7f47e0b99f"}
+                ],
+                content_height: 0
             };
         },
-        methods: {
-            on_msg_send() {
 
+        mounted() {
+            let self = this;
+            self.handle_resize();
+        },
+
+        methods: {
+            ...mapActions({
+                send_message: 'send_message'
+            }),
+
+            format_time(start, now) {
+                let diff_secs = Math.floor((now - start) / 1000);
+                let minutes = Math.floor(diff_secs/60);
+                let seconds = Math.floor(diff_secs % 60);
+                let minutes_str = minutes >= 10 ? minutes.toPrecision(2): `0${minutes}`;
+                let seconds_str = seconds >= 10 ? seconds.toPrecision(2) : `0${seconds}`;
+                return `${minutes_str}:${seconds_str}`;
+            },
+
+            on_record_start() {
+                let self = this;
+
+                self.recording = true;
+                self.record_start_time = Date.now();
+                self.record_current_time = Date.now();
+
+                let f = () => {
+                    self.record_current_time = Date.now();
+                    if (self.recording) {
+                        setTimeout(f, 1000);
+                    }
+                };
+
+                f();
             },
 
             async on_record_stop(voice) {
-                const [name] = await media.upload(voice);
-                console.log(name);
+                let self = this;
+                self.recording = false;
+                const location = await media.upload(voice, `voice-${UUIDv4()}`);
+                console.log(location);
             },
 
 
-            async on_stop_record_voice() {
+            handle_resize() {
+                let self = this;
+                if (!self.session.login_id) {
+                    return;
+                }
 
-
-            },
-
-            resize() {
                 const textarea = document.getElementById('text_input');
                 const textarea_scrollbar = document.getElementById('text_input_scroll');
-
-                textarea.style.height = '40px';
-                textarea_scrollbar.style.height = '40px';
+                textarea.style.height = '25px';
+                textarea_scrollbar.style.height = '25px';
                 const height = textarea.scrollHeight;
                 textarea.style.height = `${height}px`;
                 textarea_scrollbar.style.height = `${Math.min(height, 160)}px`;
+
+                const content = document.getElementById('content');
+                const top = document.getElementById('top');
+                const bottom = document.getElementById('bottom');
+                const talk = document.getElementById('talk');
+
+                self.content_height = talk.clientHeight - bottom.clientHeight - top.clientHeight;
+                content.style.height = `${self.content_height}px`;
             },
+
+            async send_text() {
+                let self = this;
+                await self.send_message({type: 'text', content: self.text, to: self.session.login_id});
+                self.text = '';
+            }
 
         }
     }
@@ -108,6 +196,18 @@
         border-radius: 5px;
         display: flex;
         flex-direction: column;
+    }
+
+    #talk_no_session {
+        background: rgb(238, 238, 238);
+        width: 60em;
+        height: 50em;
+        min-width: 800px;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
 
     #banner {
@@ -137,15 +237,11 @@
         border-radius: 4px;
     }
 
-
-    #typing_menu {
-        display: flex;
-    }
-
     #text_input_scroll {
-        height: 40px;
+        height: 25px;
         flex-grow: 1;
         display: flex;
+        align-self: center;
     }
 
     #text_input {
@@ -155,11 +251,15 @@
         overflow: hidden;
         resize: none;
         font-size: 16px;
-        padding-left: 10px;
-        padding-right: 10px;
+        text-align: justify;
     }
 
-    button {
+    #text_input:active, #text_input:hover , #text_input:focus{
+        border: none;
+        outline: none;
+    }
+
+    .talk_button {
         margin-left: 10px;
         margin-right: 10px;
         color: rgb(64, 167, 227);
@@ -172,7 +272,7 @@
         outline: none;
     }
 
-    button:hover, button:active, button:focus {
+    .talk_button:hover, .talk_button:active, .talk_button:focus {
         box-shadow: none;
         border: none;
         outline: none;
@@ -188,5 +288,6 @@
         margin-left: 10px;
         margin-right: 10px;
     }
+
 
 </style>

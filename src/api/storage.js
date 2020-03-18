@@ -1,6 +1,4 @@
-import Dexie from 'dexie';
-
-Dexie.debug = process.env.NODE_ENV !== 'production';
+const JsStore = require('jsstore');
 
 export class SessionStore {
     db;
@@ -9,28 +7,60 @@ export class SessionStore {
     }
 
     async initialize(login_id) {
-        this.db = new Dexie(`session:${login_id}`, {autoOpen: false});
-        this.db.version(1).stores({
-            session: 'login_id',
-            message: 'id, from, type, timestamp'
+        this.db = new JsStore.Connection(new Worker('dist/jsstore.worker.js'));
+        await this.db.initDb({
+            name: `history:${login_id}`,
+            tables: [
+                {
+                    name: 'session',
+                    columns: {
+                        login_id: {primaryKey: true, notNull: true}
+                    }
+                },
+                {
+                    name: 'message',
+                    columns: {
+                        session: {dataType: 'string'},
+                        message_id: {primaryKey: true},
+                        from: {dataType: 'string'},
+                        to: {dataType: 'string'},
+                        type: {dataType: 'string'},
+                        timestamp: {dataType: 'number'},
+                        content: {dataType: 'string'}
+                    }
+                }
+            ]
         });
-        await this.db.open();
         return this;
     }
 
     async get_sessions() {
-        let session_list = [];
-        await this.db.session.each(session => session_list.push(session.login_id));
-        return session_list;
+        return (await this.db.select({from: 'session'})).map(session => session.login_id);
     }
 
     async has_session(slave_login_id) {
-        return (await this.db.session.get(slave_login_id)) !== undefined;
+        let results = await this.db.select({
+            from: 'session',
+            where: {
+                login_id: slave_login_id
+            }
+        });
+        return results.length !== 0;
     }
 
     async put_session(slave_login_id) {
-        await this.db.session.put({login_id: slave_login_id});
+        await this.db.insert({
+            into: 'session',
+            values: [{login_id: slave_login_id}]
+        });
+    }
+
+    async append_history(session, history) {
+        await this.db.insert({
+            into: 'message',
+            values: [{session: session, ...history}]
+        });
     }
 }
 
-export let session_store = new SessionStore();
+export const storage = new SessionStore();

@@ -12,27 +12,3 @@ export function handle_response(res) {
     }
 }
 
-
-class Connection {
-    token = '';
-    socket;
-    login_id = '';
-
-    constructor() {
-    }
-
-
-    setup_keepalive() {
-        setTimeout(() => {
-            this.socket.sendPacked({type: 'keepalive', token: this.token});
-            this.setup_keepalive();
-        }, 120000);
-    }
-
-    async logout() {
-        await axios.post('/account/logout', {token: this.token}).then(handle_response);
-        this.socket.close(4001, 'client close');
-    }
-}
-
-export const connection = new Connection();
