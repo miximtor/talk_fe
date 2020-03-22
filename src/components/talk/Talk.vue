@@ -1,5 +1,5 @@
 <template>
-    <div id="talk" v-if="session.login_id">
+    <div id="talk" v-if="session">
 
         <div id="top">
             <div id="banner">
@@ -20,7 +20,6 @@
         <div id="content">
             <MessageViewer
                 :session="session"
-                :messages="messages"
                 :height="content_height">
 
             </MessageViewer>
@@ -79,15 +78,21 @@
 <script>
     import {media} from "@/api/media";
     import {v4 as UUIDv4} from 'uuid';
-    import {mapActions} from 'vuex';
+    import {mapActions, mapGetters} from 'vuex';
 
     import Mic from '@/components/util/Mic';
     import MessageViewer from "@/components/util/MessageViewer";
 
     export default {
         name: "Talk",
-        props: ['session'],
         components: {MessageViewer, Mic},
+
+        computed: {
+            ...mapGetters({
+                session: 'current_session'
+            }),
+
+        },
 
         data() {
             return {
@@ -96,14 +101,6 @@
                 recording: false,
                 record_start_time: 0,
                 record_current_time: 0,
-                messages: [
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be6","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073051,"content":"fuck u"},
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be7","from":"maxtorm","to":"maxtorm12138","type":"file","timestamp":1584530073052,"content":"{\"name\": \"FFmpeg-master.zip\", \"url\": \"https://voice-1253676805.cos.ap-guangzhou.myqcloud.com/FFmpeg-master.zip\"}"},
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be8","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073053,"content":"fuck u"},
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be8","from":"maxtorm12138","to":"maxtorm","type":"text","timestamp":1584530073054,"content":"fuck u"},
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be9","from":"maxtorm","to":"maxtorm12138","type":"text","timestamp":1584530073055,"content":"fuck u,fuck u,fucfuck u,ffuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,fuck u,uck u,k u,fuck u"},
-                    {"message_id":"e1d521d7-6abc-4194-8f95-bccb421e3be1","from":"maxtorm","to":"maxtorm12138","type":"voice","timestamp":1584530074057,"content":"https://voice-1253676805.cos.ap-guangzhou.myqcloud.com/voice-6798840f-eb0e-4827-8fbb-6b7f47e0b99f"}
-                ],
                 content_height: 0
             };
         },
@@ -114,6 +111,7 @@
         },
 
         methods: {
+
             ...mapActions({
                 send_message: 'send_message'
             }),
@@ -148,13 +146,13 @@
                 let self = this;
                 self.recording = false;
                 const location = await media.upload(voice, `voice-${UUIDv4()}`);
-                console.log(location);
+                await self.send_voice(location);
             },
 
 
             handle_resize() {
                 let self = this;
-                if (!self.session.login_id) {
+                if (!self.session) {
                     return;
                 }
 
@@ -177,8 +175,13 @@
 
             async send_text() {
                 let self = this;
-                await self.send_message({type: 'text', content: self.text, to: self.session.login_id});
+                await self.send_message({type: 'message-text', content: {text: self.text}, to: self.session.login_id});
                 self.text = '';
+            },
+
+            async send_voice(url) {
+                let self = this;
+                await self.send_message({type: 'message-voice', content:{url: url}, to: self.session.login_id});
             }
 
         }

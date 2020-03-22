@@ -14,7 +14,7 @@
 </template>
 
 <script>
-    import {mapGetters, mapActions} from 'vuex';
+    import {mapGetters, mapActions, mapMutations} from 'vuex';
 
     export default {
         name: "SessionList",
@@ -27,17 +27,19 @@
         methods: {
 
             ...mapActions({
-                new_session: 'new_session'
+                upsert_session: 'upsert_session',
+                update_messages: 'update_messages'
             }),
+
+            ...mapMutations({
+                set_current_session: 'set_current_session'
+            }),
+
 
             on_session_click(session) {
               let self = this;
-              self.$emit('session-click', session);
-            },
-
-            async use_session(slave_login_id) {
-                let self = this;
-                await self.new_session(slave_login_id);
+              self.set_current_session(session.login_id);
+              self.update_messages(session.login_id);
             },
 
         }

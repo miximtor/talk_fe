@@ -6,16 +6,11 @@
         </PersonalInfo>
         <iv-tabs :value="active_name" id="switch" @on-click="on_menu_selection_change">
             <iv-tab-pane icon="md-contacts" name="contacts">
-
-                <ContactList
-                        ref="contacts"
-                        @contact-click="(contact) => {this.$emit('contact-click', contact)}">
+                <ContactList ref="contacts">
                 </ContactList>
             </iv-tab-pane>
             <iv-tab-pane icon="md-chatboxes" name="session">
-                <SessionList
-                        ref="session"
-                        @session-click="(session) => {this.$emit('session-click', session)}">
+                <SessionList ref="session">
                 </SessionList>
             </iv-tab-pane>
         </iv-tabs>
@@ -27,9 +22,17 @@
     import ContactList from "@/components/info/ContactList";
     import SessionList from "@/components/info/SessionList";
 
+    import {mapGetters, mapActions} from 'vuex';
+
     export default {
         name: "Info",
         components: {SessionList, ContactList, PersonalInfo},
+
+        computed: {
+            ...mapGetters({
+                current_contact: 'current_contact'
+            })
+        },
 
         data() {
             return {
@@ -38,6 +41,12 @@
         },
 
         methods: {
+
+
+            ...mapActions({
+                upsert_session: 'upsert_session'
+            }),
+
             on_menu_click(name) {
                 let self = this;
                 self.$emit('menu_click', name);
@@ -53,12 +62,6 @@
                 self.change_menu_selection(name);
                 self.$emit('menu-change', name);
             },
-
-            start_message(contact) {
-                let self = this;
-                self.$refs['session'].use_session(contact.login_id);
-                self.change_menu_selection('session');
-            }
 
         }
     }

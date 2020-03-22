@@ -31,11 +31,6 @@ class Account {
         return [token, socket];
     }
 
-    async logout(token, socket) {
-        await axios.post('/account/logout', {token: token}).then(handle_response);
-        socket.close(4001, 'client logout');
-    }
-
     async register(register_form) {
         await axios.post('/account/register', register_form).then(handle_response);
     }

@@ -3,23 +3,18 @@
 
         <Info
                 ref="info"
-                @contact-click="(contact) => {this.current_select_contact = contact}"
-                @session-click="(session) => {this.current_select_session = session}"
                 @logout="on_logout"
-                @menu-change="on_menu_change"
+                @menu-change="(name) => {this.contact_visible = name === 'contacts'}"
                 @menu_click="on_menu_click">
         </Info>
 
         <div v-if="contact_visible">
             <Contact
-                    :contact="current_select_contact"
                     @start-message="on_start_message">
             </Contact>
         </div>
         <div v-else>
-            <Talk
-                    :session="current_select_session">
-            </Talk>
+            <Talk></Talk>
         </div>
 
     </div>
@@ -30,19 +25,35 @@
     import Contact from "@/components/talk/ContactDetail";
     import Talk from "@/components/talk/Talk";
 
-    import {mapActions} from 'vuex';
+    import {mapActions, mapMutations, mapGetters} from 'vuex';
 
     export default {
 
         name: "Chat",
         components: {Contact, Info, Talk},
+        computed: {
+            ...mapGetters({
+                current_contact: 'current_contact',
+                socket_state: 'socket_state'
+            })
+        },
 
+        watch: {
+            socket_state(new_state) {
+                let self = this;
+                if (new_state === 'error') {
+                    self.$modal.show('error-dialog', {
+                        title: '与服务器连接断开',
+                        content: '请重新登录'
+                    });
+                    self.$emit('connection-close');
+                }
+            }
+        },
 
         data() {
             return {
                 active_name: 'contacts',
-                current_select_contact: {},
-                current_select_session: {},
                 contact_visible: true
             }
         },
@@ -50,25 +61,29 @@
         methods: {
 
             ...mapActions({
-                do_logout: 'logout'
+                logout: 'logout',
+                upsert_session: 'upsert_session',
+                update_messages: 'update_messages'
+            }),
+
+            ...mapMutations({
+                set_current_session: 'set_current_session'
             }),
 
             async on_logout() {
                 let self = this;
-                await self.do_logout();
+                await self.logout();
                 self.$emit('logout-success');
             },
 
-            on_start_message() {
+            async on_start_message() {
                 let self = this;
-                self.$refs['info'].start_message(self.current_select_contact);
-                self.current_select_session = self.current_select_contact;
-                self.contact_visible = false;
-            },
+                await self.upsert_session(self.current_contact.login_id);
+                self.set_current_session(self.current_contact.login_id);
+                await self.update_messages(self.current_contact.login_id);
 
-            on_menu_change(name) {
-                let self = this;
-                self.contact_visible = name === 'contacts';
+                self.$refs['info'].change_menu_selection('session');
+                self.contact_visible = false;
             },
 
             on_menu_click(name) {

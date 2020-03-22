@@ -73,9 +73,9 @@
 
             async on_login() {
                 let self = this;
-                await self.$refs['login_form'].validate();
-                self.$Spin.show();
                 try {
+                    self.$Spin.show();
+                    await self.$refs['login_form'].validate();
                     await self.do_login(self.login_form);
                     self.$emit('login-success');
                 } catch (e) {
@@ -88,10 +88,6 @@
                 }
             },
 
-            on_register() {
-                let self = this;
-                self.$modal.show('register-dialog');
-            },
         }
     }
 </script>

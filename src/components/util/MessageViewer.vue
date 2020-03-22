@@ -11,11 +11,11 @@
                                 <span>{{fmt(message.timestamp)}}</span>
                             </div>
                             <div class="message-content-wrapper self">
-                                <div v-if="message.type==='text'" class="message-content-content text">
-                                    <span>{{message.content}}</span>
+                                <div v-if="message.type==='message-text'" class="message-content-content text">
+                                    <span>{{message.content.text}}</span>
                                 </div>
-                                <div v-if="message.type === 'voice'" class="message-content-content voice">
-                                    <audio controls :src="message.content"></audio>
+                                <div v-if="message.type === 'message-voice'" class="message-content-content voice">
+                                    <audio controls :src="message.content.url"></audio>
                                 </div>
                                 <div v-if="message.type === 'file'" class="message-content-content file">
                                     <span>文件： {{JSON.parse(message.content).name}}</span>
@@ -33,11 +33,11 @@
                             </div>
 
                             <div class="message-content-wrapper others">
-                                <div v-if="message.type==='text'" class="message-content-content text">
-                                    <span>{{message.content}}</span>
+                                <div v-if="message.type==='message-text'" class="message-content-content text">
+                                    <span>{{message.content.text}}</span>
                                 </div>
-                                <div v-if="message.type === 'voice'" class="message-content-content voice">
-                                    <audio controls :src="message.content"></audio>
+                                <div v-if="message.type === 'message-voice'" class="message-content-content voice">
+                                    <audio controls :src="message.content.url"></audio>
                                 </div>
                                 <div v-if="message.type === 'file'" class="message-content-content file">
                                     <span>文件: {{JSON.parse(message.content).name}}</span>
@@ -58,11 +58,12 @@
 
     export default {
         name: "MessageViewer",
-        props: ['height', 'session', 'messages'],
+        props: ['height', 'session'],
 
         computed: {
             ...mapGetters({
-                personal_info: 'personal_info'
+                personal_info: 'personal_info',
+                messages: 'messages'
             })
         },
         data() {
@@ -92,6 +93,7 @@
         border: none;
         padding: 0;
         margin-top: 10px;
+        margin-bottom: 10px;
     }
 </style>
 

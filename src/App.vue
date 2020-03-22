@@ -8,6 +8,7 @@
 
         <Chat
                 @logout-success="page=1"
+                @connection-close="page=1"
                 v-if="page===2">
         </Chat>
 

@@ -23,10 +23,11 @@ export class SessionStore {
                         session: {dataType: 'string'},
                         message_id: {primaryKey: true},
                         from: {dataType: 'string'},
+                        sender: {dataType: 'string'},
                         to: {dataType: 'string'},
                         type: {dataType: 'string'},
                         timestamp: {dataType: 'number'},
-                        content: {dataType: 'string'}
+                        content: {dataType: 'object'}
                     }
                 }
             ]
@@ -38,28 +39,38 @@ export class SessionStore {
         return (await this.db.select({from: 'session'})).map(session => session.login_id);
     }
 
-    async has_session(slave_login_id) {
-        let results = await this.db.select({
-            from: 'session',
-            where: {
-                login_id: slave_login_id
-            }
-        });
-        return results.length !== 0;
-    }
-
-    async put_session(slave_login_id) {
+    async upsert_session(slave_login_id) {
         await this.db.insert({
             into: 'session',
+            upsert: true,
             values: [{login_id: slave_login_id}]
+        })
+    }
+
+    async upsert_message(session, message) {
+        await this.db.insert({
+            into: 'message',
+            upsert: true,
+            values: [{
+                session: session,
+                ...message
+            }]
         });
     }
 
-    async append_history(session, history) {
-        await this.db.insert({
-            into: 'message',
-            values: [{session: session, ...history}]
+    async get_messages(session) {
+        const messages = await this.db.select({
+            from: 'message',
+            where: {
+                session: session
+            },
+            order: {
+                by: 'timestamp',
+                type: 'asc'
+            }
         });
+        messages.every(message => delete message.session);
+        return messages;
     }
 }
 

@@ -2,7 +2,7 @@
     <div id="contact">
         <span id="bar">详细信息</span>
         <iv-divider style="padding: 0;margin: 0; background: rgb(214,214,214)"></iv-divider>
-        <div v-if="JSON.stringify(contact) !== '{}'" id="detail">
+        <div v-if="contact" id="detail">
             <iv-avatar id="avatar" shape="square" size="150" :src="contact.avatar" ></iv-avatar>
             <span id="nick">{{contact.nick}}</span>
             <span>电话：{{contact.phone || '无'}}</span>
@@ -16,9 +16,15 @@
 </template>
 
 <script>
+    import {mapGetters} from 'vuex';
+
     export default {
         name: "Contact",
-        props: ['contact'],
+        computed: {
+            ...mapGetters({
+                contact: 'current_contact'
+            })
+        }
     }
 </script>
 

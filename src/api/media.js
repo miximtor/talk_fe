@@ -1,29 +1,20 @@
-const COS = require('cos-js-sdk-v5');
+const OSS = require('ali-oss');
+const base64 = require('base-64');
 
 class Media {
-    cos = null;
+    oss = null;
     constructor() {
-        this.cos = new COS({
-            SecretId: 'AKIDJPPAh0AqOjyMWTsftrgGgs66qLbcdr66',
-            SecretKey: '7zd092fBRS7kBsGPM4XlsmR4SbWDg5GC'
+        this.oss = new OSS({
+            accessKeyId: base64.decode('TFRBSTRGYmtjcFF3bWpvS3U2ZlVSd2paDQo='),
+            accessKeySecret: base64.decode('cDc0TmJ6VGtBbzBsRzdZTERqVHlQNUhTdDNOREVw'),
+            bucket: 'talk-audio',
+            endpoint: 'oss-cn-shenzhen.aliyuncs.com'
         });
     }
 
+
     async upload(content, key) {
-        return new Promise((resolve, reject) => {
-            this.cos.putObject({
-                Bucket: 'voice-1253676805',
-                Region: 'ap-guangzhou',
-                Key: key,
-                Body: content
-            }, (err, data) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                resolve(data.Location);
-            });
-        });
+        return (await this.oss.put(key, content)).url;
     }
 }
 

@@ -14,7 +14,7 @@
 </template>
 
 <script>
-    import {mapGetters} from 'vuex';
+    import {mapGetters, mapMutations} from 'vuex';
 
     export default {
         name: "ContactList",
@@ -26,9 +26,15 @@
         },
 
         methods: {
+
+            ...mapMutations({
+                set_current_contact: 'set_current_contact'
+            }),
+
+
             on_contact_click(contact) {
                 let self = this;
-                self.$emit('contact-click', contact);
+                self.set_current_contact(contact);
             }
         }
     }
