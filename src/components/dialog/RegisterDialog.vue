@@ -1,5 +1,6 @@
 <template>
-    <modal name="register-dialog" height="auto" :clickToClose="false" styles="display: flex; flex-direction: column">
+    <modal name="register-dialog" height="auto" :clickToClose="false" styles="display: flex; flex-direction: column"
+           @before-open="on_before_open">
         <DialogTop name="register-dialog" title="账号注册"></DialogTop>
 
         <div id="register">
@@ -240,6 +241,23 @@
                     });
                 }
             },
+
+            on_before_open() {
+                let self = this;
+                self.current_page = 0;
+                self.register_form = {
+                    login_id: '',
+                    login_password: '',
+                    login_password_confirm: '',
+                    email: '',
+                    phone: '',
+                    avatar: '',
+                    nick: '',
+                    question1: '', answer1: '',
+                    question2: '', answer2: '',
+                    question3: '', answer3: '',
+                };
+            }
         }
     }
 </script>

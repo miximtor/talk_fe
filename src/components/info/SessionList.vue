@@ -4,7 +4,9 @@
             <iv-list>
                 <iv-list-item v-for="(session, index) of sessions" :key="index">
                     <iv-button class="session_info_item" @click="on_session_click(session)">
-                        <iv-avatar size="50" shape="square" :src="session.avatar"></iv-avatar>
+                        <iv-badge :dot="false">
+                            <iv-avatar size="50" shape="square" :src="session.avatar"></iv-avatar>
+                        </iv-badge>
                         <span style="margin-left: 20px">{{session.nick}}</span>
                     </iv-button>
                 </iv-list-item>

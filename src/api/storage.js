@@ -72,6 +72,15 @@ export class SessionStore {
         messages.every(message => delete message.session);
         return messages;
     }
+
+    async delete_message(message_id) {
+        await this.db.remove({
+            from: 'message',
+            where: {
+                message_id: message_id
+            }
+        });
+    }
 }
 
 export const storage = new SessionStore();

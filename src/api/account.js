@@ -35,6 +35,10 @@ class Account {
         await axios.post('/account/register', register_form).then(handle_response);
     }
 
+    async search(token, key_text) {
+        return (await axios.post('/relation/search', {token: token, key_text: key_text}).then(handle_response)).data;
+    }
+
 }
 
 export const account = new Account();

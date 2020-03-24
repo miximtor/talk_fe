@@ -12,9 +12,13 @@ class Media {
         });
     }
 
-
-    async upload(content, key) {
-        return (await this.oss.put(key, content)).url;
+    async upload(name, content, progress) {
+        console.log(progress);
+        return (await this.oss.put(name, content, {
+            progress: (p) => {
+                console.log(p);
+            }
+        })).url;
     }
 }
 

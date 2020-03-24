@@ -1,8 +1,9 @@
 <template>
-    <div id="mic">
-        <div id="pop">
-        </div>
-        <button @click="on_mic_click" :disabled="mic.state === 'OPENING' || mic.state === 'CLOSING'">
+    <div id="mic" :style="mic.background">
+        <button
+                @mousedown="on_mouse_down"
+                @mouseup="on_mouse_up"
+                @mouseleave="on_mouse_leave">
             <i :class="mic.icon" :style="mic.style"></i>
         </button>
     </div>
@@ -11,33 +12,20 @@
 <script>
     const MicRecorder = require('mic-recorder-to-mp3');
 
-    const CLOSE = 'close';
-    const OPENING = 'opening';
-    const OPEN = 'open';
-    const CLOSING = 'closing';
 
     const MIC_CLOSE = {
         icon: 'ivu-icon ivu-icon-md-mic',
         style: 'vertical-align: unset; color: gray',
-        state: CLOSE,
+        background: 'background: rgba(0, 0, 0, 0)',
+        state: 'close'
     };
 
-    const MIC_OPENING = {
-        icon: 'ivu-icon ivu-icon-md-mic',
-        style: 'vertical-align: unset; color: gray',
-        state: OPENING,
-    };
 
     const MIC_OPEN = {
         icon: 'ivu-icon ivu-icon-md-mic',
         style: 'vertical-align: unset; color: rgb(64, 167, 227)',
-        state: OPEN
-    };
-
-    const MIC_CLOSING = {
-        icon: 'ivu-icon ivu-icon-md-mic',
-        style: 'vertical-align: unset; color: rgb(64, 167, 227)',
-        state: CLOSING
+        background: 'background: rgb(227,241,250)',
+        state: 'open'
     };
 
     export default {
@@ -46,48 +34,52 @@
         data() {
             return {
                 mic: MIC_CLOSE,
-                recorder: new MicRecorder({bitRate: 8})
+                recorder: new MicRecorder({bitRate: 8}),
+                available: false,
+            }
+        },
+
+        async mounted() {
+            let self = this;
+            try {
+                await self.recorder.start();
+                await self.recorder.stop();
+                self.available = true;
+            } catch (e) {
+                self.$modal.show('error-dialog', {
+                    title: '检查麦克风失败',
+                    content: '请确认麦克风设备及权限'
+                });
             }
         },
 
         methods: {
-            async on_mic_click() {
+            async on_mouse_down() {
                 let self = this;
-                switch (self.mic.state) {
-                    case CLOSE:
-                        self.mic = MIC_OPENING;
-                        if (!await self.start_recorder()) {
-                            self.mic = MIC_CLOSE;
-                            return;
-                        }
-                        self.mic = MIC_OPEN;
-                        break;
-                    case OPEN:
-                        self.mic = MIC_CLOSING;
-                        await self.stop_recorder();
-                        self.mic = MIC_CLOSE;
-                        break;
+                if (!self.available) {
+                    self.$modal.show('error-dialog', {
+                        title: '无法录音',
+                        content: '请检查麦克风设备及权限'
+                    });
+                    return;
                 }
-            },
 
-            async start_recorder() {
-                let self = this;
                 try {
                     await self.recorder.start();
                     self.$emit('record-start');
-                    return true;
+                    self.mic = MIC_OPEN;
                 } catch (e) {
                     self.$modal.show('error-dialog', {
                         title: '打开麦克风失败',
                         content: '请检查麦克风设备及权限'
                     });
-                    return false;
                 }
             },
 
-            async stop_recorder() {
+            async on_mouse_up() {
                 let self = this;
                 try {
+                    self.mic = MIC_CLOSE;
                     const [,voice] = await self.recorder.stop().getMp3();
                     self.$emit('record-stop', voice);
                 } catch (e) {
@@ -95,6 +87,22 @@
                         title: '录音失败',
                         content: '请检查麦克风设备及权限'
                     });
+                }
+            },
+
+            async on_mouse_leave() {
+                let self = this;
+                if (self.mic.state === 'open') {
+                    try {
+                        self.mic = MIC_CLOSE;
+                        await self.recorder.stop();
+                        self.$emit('record-cancel');
+                    } catch (e) {
+                        self.$modal.show('error-dialog', {
+                            title: '录音失败',
+                            content: e.message
+                        });
+                    }
                 }
             }
         }
@@ -107,6 +115,7 @@
         margin-right: 10px;
         width: 40px;
         height: 40px;
+        border-radius: 20px;
     }
 
     #mic button {

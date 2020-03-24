@@ -19,7 +19,7 @@
                         </iv-button>
                     </iv-list-item>
                     <iv-list-item>
-                        <iv-button class=personal_preference_menu_item ghost type="text">
+                        <iv-button class=personal_preference_menu_item ghost type="text" @click="$modal.show('add-friend-dialog')">
                             <iv-icon type="md-search"/>
                             添加好友
                         </iv-button>
@@ -39,15 +39,17 @@
                 </iv-list>
             </div>
         </iv-poptip>
+        <AddFriendDialog></AddFriendDialog>
     </div>
 </template>
 
 <script>
     import {mapGetters} from 'vuex';
+    import AddFriendDialog from '@/components/dialog/AddFriendDialog';
 
     export default {
         name: "PersonalInfo",
-        components: {},
+        components: {AddFriendDialog},
 
         computed: {
             ...mapGetters({

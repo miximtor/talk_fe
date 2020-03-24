@@ -19,7 +19,7 @@
     import {mapGetters} from 'vuex';
 
     export default {
-        name: "Contact",
+        name: "ContactDetail",
         computed: {
             ...mapGetters({
                 contact: 'current_contact'
@@ -40,7 +40,7 @@
 
     #contact {
         background: rgb(238, 238, 238);
-        width: 60em;
+        width: 55em;
         height: 50em;
         min-width: 800px;
         border-radius: 5px;

@@ -12,6 +12,7 @@
                 v-if="page===2">
         </Chat>
 
+
         <ErrorDialog></ErrorDialog>
     </div>
 </template>

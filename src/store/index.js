@@ -52,12 +52,21 @@ const mutations = {
         if (!state.sessions.find(session => session === slave_login_id)) {
             state.sessions.push(slave_login_id);
         }
+        console.log(state.sessions);
     },
 
     [Mutation.UPSERT_MESSAGES](state, msg) {
         if (!state.messages.find(message => message.message_id === msg.message_id)) {
             state.messages.push(msg);
         }
+    },
+
+    [Mutation.DELETE_MESSAGE](state, message_id) {
+        const index = state.messages.findIndex(message => message.message_id === message_id);
+        if (index === -1) {
+            return;
+        }
+        state.messages.splice(index, 1);
     },
 
     [Mutation.SET_CURRENT_CONTACT](state, contact) {
@@ -203,11 +212,17 @@ const actions = {
         if (msg.from === state.current_session) {
             commit(Mutation.UPSERT_MESSAGES, msg);
         }
+
     },
 
     async update_messages({commit}, slave_login_id) {
         const messages = await storage.get_messages(slave_login_id);
         commit(Mutation.SET_MESSAGES, messages);
+    },
+
+    async delete_message({commit}, message_id) {
+        await storage.delete_message(message_id);
+        commit(Mutation.DELETE_MESSAGE, message_id);
     }
 
 };

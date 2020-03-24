@@ -9,9 +9,9 @@
         </Info>
 
         <div v-if="contact_visible">
-            <Contact
+            <ContactDetail
                     @start-message="on_start_message">
-            </Contact>
+            </ContactDetail>
         </div>
         <div v-else>
             <Talk></Talk>
@@ -22,7 +22,7 @@
 
 <script>
     import Info from "@/components/info/Info";
-    import Contact from "@/components/talk/ContactDetail";
+    import ContactDetail from "@/components/talk/ContactDetail";
     import Talk from "@/components/talk/Talk";
 
     import {mapActions, mapMutations, mapGetters} from 'vuex';
@@ -30,7 +30,7 @@
     export default {
 
         name: "Chat",
-        components: {Contact, Info, Talk},
+        components: {ContactDetail, Info, Talk},
         computed: {
             ...mapGetters({
                 current_contact: 'current_contact',

@@ -4,15 +4,15 @@ import App from './App.vue'
 import store from './store';
 
 import {Form, FormItem, Input, Icon, Button, ButtonGroup, Upload, Spin, Divider, Avatar, Menu, MenuItem, Poptip} from "view-design";
-import {List, Tabs, TabPane, Notice} from 'view-design';
+import {List, Tabs, TabPane, Notice, Badge} from 'view-design';
 
 import 'view-design/dist/styles/iview.css';
 
 import PerfectScrollbar from 'vue2-perfect-scrollbar'
 import 'vue2-perfect-scrollbar/dist/vue2-perfect-scrollbar.css'
 
-import VModal from 'vue-js-modal'
 
+import VModal from 'vue-js-modal'
 
 Vue.config.productionTip = false;
 Vue.prototype.$Spin = Spin;
@@ -34,6 +34,7 @@ Vue.component('iv-list', List);
 Vue.component('iv-list-item', List.Item);
 Vue.component('iv-tabs', Tabs);
 Vue.component('iv-tab-pane', TabPane);
+Vue.component('iv-badge', Badge);
 
 Vue.use(PerfectScrollbar);
 Vue.use(VModal);
