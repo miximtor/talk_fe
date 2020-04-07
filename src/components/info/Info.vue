@@ -9,8 +9,8 @@
                 <ContactList ref="contacts">
                 </ContactList>
             </iv-tab-pane>
-            <iv-tab-pane icon="md-chatboxes" name="session">
-                <SessionList ref="session">
+            <iv-tab-pane icon="md-chatboxes" name="sessions">
+                <SessionList ref="sessions">
                 </SessionList>
             </iv-tab-pane>
         </iv-tabs>
@@ -36,7 +36,7 @@
 
         data() {
             return {
-                active_name: 'contacts',
+                active_name: 'sessions',
             }
         },
 
@@ -59,6 +59,11 @@
 
             on_menu_selection_change(name) {
                 let self = this;
+                if (name === 'sessions') {
+                    self.$refs.contacts.on_leave();
+                } else {
+                    self.$refs.sessions.on_leave();
+                }
                 self.change_menu_selection(name);
                 self.$emit('menu-change', name);
             },

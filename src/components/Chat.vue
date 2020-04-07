@@ -54,7 +54,7 @@
         data() {
             return {
                 active_name: 'contacts',
-                contact_visible: true
+                contact_visible: false
             }
         },
 
@@ -82,7 +82,7 @@
                 self.set_current_session(self.current_contact.login_id);
                 await self.update_messages(self.current_contact.login_id);
 
-                self.$refs['info'].change_menu_selection('session');
+                self.$refs['info'].change_menu_selection('sessions');
                 self.contact_visible = false;
             },
 

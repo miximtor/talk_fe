@@ -124,7 +124,6 @@
 
             on_before_upload(file) {
                 let self = this;
-                console.log(file);
                 self.$emit('send-file', file);
                 return false;
             },

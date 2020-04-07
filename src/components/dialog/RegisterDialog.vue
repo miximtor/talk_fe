@@ -174,7 +174,7 @@
                 return callback();
             },
 
-            login_password_validator(rule, value, callback) {
+            async login_password_validator(rule, value, callback) {
                 let login_password_regex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-.]).{8,20}$/gm;
                 if (!value.match(login_password_regex)) {
                     throw new Error('必须包含大/小写字母，数字、特殊字符（$?!@$%^&*-.）长度8-20个字符');
@@ -182,7 +182,7 @@
                 return callback();
             },
 
-            login_password_confirm_validator(rule, value, callback) {
+            async login_password_confirm_validator(rule, value, callback) {
                 return value === this.register_form.login_password ? callback() : callback(new Error('与密码不一致'));
             },
 

@@ -10,3 +10,4 @@ export const SET_SOCKET_STATE = 'set_socket_state';
 export const SET_MESSAGES = 'set_messages';
 export const UPSERT_MESSAGES = 'upsert_messages';
 export const DELETE_MESSAGE = 'delete_message';
+export const SET_NEW_MESSAGE = 'set_new_message';

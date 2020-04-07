@@ -33,7 +33,8 @@
         mounted() {
         },
 
-        methods: {}
+        methods: {
+        }
     }
 </script>
 

@@ -1,29 +1,36 @@
 <template>
-    <div id="talk" v-if="session">
+    <div id="talk" v-if="current_session">
         <div id="top">
             <div id="banner">
                 <div>
                 </div>
                 <div style="display: flex; justify-content: center">
-                    <span id="bar">{{session.nick}}</span>
+                    <span id="bar">{{current_session.nick}}</span>
                 </div>
                 <div style="display: flex; justify-content: flex-end">
-                    <button class="talk_button">
-                        <i class="ivu-icon ivu-icon-md-more" style="vertical-align: unset; color: gray"></i>
-                    </button>
+                    <iv-poptip placement="bottom-end" trigger="hover" padding="0px 0px">
+                        <button class="talk_button" v-show="current_session.login_id !== 'sys'">
+                            <i class="ivu-icon ivu-icon-md-more" style="vertical-align: unset; color: gray"></i>
+                        </button>
+                        <div slot="content">
+                            <iv-button-group :vertical="true" style="width: 100%">
+                                <iv-button long>发起视频通话</iv-button>
+                                <iv-button long @click="delete_friend">删除好友</iv-button>
+                                <iv-button long>加入黑名单</iv-button>
+                            </iv-button-group>
+                        </div>
+                    </iv-poptip>
                 </div>
             </div>
             <iv-divider style="padding: 0;margin: 0; background: rgb(214,214,214)"></iv-divider>
         </div>
 
         <div id="content">
-            <MessageViewer
-                :session="session"
-                :height="content_height">
+            <MessageViewer :height="content_height" ref="message-viewer">
             </MessageViewer>
         </div>
 
-        <div id="bottom">
+        <div id="bottom" v-show="current_session.login_id !== 'sys'">
             <MessageInput
                     @resize="on_resize"
                     @send-text="send_text"
@@ -33,7 +40,7 @@
         </div>
 
     </div>
-    <div id="talk_no_session" v-else >
+    <div id="talk_no_session" v-else>
         <span style="font-size: 30px">未选择聊天</span>
     </div>
 
@@ -55,7 +62,8 @@
 
         computed: {
             ...mapGetters({
-                session: 'current_session'
+                current_session: 'current_session',
+                login_id: 'login_id'
             }),
 
         },
@@ -66,10 +74,20 @@
             };
         },
 
+        watch: {
+            current_session() {
+                let self = this;
+                self.$nextTick()
+                    .then(() => self.on_resize())
+                    .then(() => self.$refs['message-viewer'].scroll_bottom());
+            }
+        },
+
         methods: {
 
             ...mapActions({
-                send_message: 'send_message'
+                send_message: 'send_message',
+                delete_friend: 'delete_friend'
             }),
 
             on_resize() {
@@ -82,13 +100,15 @@
 
             async send_text(text) {
                 let self = this;
-                await self.send_message({type: 'message-text', content: {text: text}, to: self.session.login_id});
+                await self.send_message(self.construct_message('message-text', {text: text}));
             },
 
             async send_voice(voice) {
                 let self = this;
-                const url = await media.upload(`voice-${UUIDv4()}-mp3`, voice, () => {});
-                await self.send_message({type: 'message-voice', content: {url: url}, to: self.session.login_id});
+                const url = await media.upload(`voice-${UUIDv4()}-mp3`, voice, () => {
+                });
+
+                await self.send_message(self.construct_message('message-voice', {url: url}));
             },
 
             async send_file(file) {
@@ -97,8 +117,27 @@
                     title: '文件上传中',
                     desc: file.name
                 });
-                const url = await media.upload(file.name, file, () => {});
-                await self.send_message({type: 'message-file', content: {url: url, name: file.name, size: file.size}, to: self.session.login_id});
+                const url = await media.upload(file.name, file, () => {
+                });
+                await self.send_message(self.construct_message('message-file', {
+                    url: url,
+                    name: file.name,
+                    size: file.size
+                }));
+            },
+
+            construct_message(type, content) {
+                let self = this;
+                return {
+                    message_id: UUIDv4(),
+                    from: self.login_id,
+                    sender: self.login_id,
+                    to: self.current_session.login_id,
+                    type: type,
+                    timestamp: Date.now(),
+                    content: content,
+                    version: 1
+                };
             }
 
         }
@@ -175,8 +214,6 @@
         border: none;
         outline: none;
     }
-
-
 
 
 </style>

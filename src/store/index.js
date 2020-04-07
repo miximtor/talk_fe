@@ -4,6 +4,7 @@ import Vuex from 'vuex'
 import {account} from '@/api/account';
 import {storage} from "@/api/storage";
 import {message} from "@/api/message";
+import {system_session} from "@/api/account";
 
 import {v4 as UUIDv4} from 'uuid';
 
@@ -23,7 +24,8 @@ const state = {
     sessions: [],
     current_session: '',
     current_contact: null,
-    messages: []
+    messages: [],
+    new_message: {}
 };
 
 const mutations = {
@@ -45,14 +47,13 @@ const mutations = {
     },
 
     [Mutation.SET_SESSIONS](state, sessions) {
-        state.sessions = sessions;
+        state.sessions = sessions.filter(session => session !== 'sys');
     },
 
     [Mutation.UPSERT_SESSIONS](state, slave_login_id) {
         if (!state.sessions.find(session => session === slave_login_id)) {
             state.sessions.push(slave_login_id);
         }
-        console.log(state.sessions);
     },
 
     [Mutation.UPSERT_MESSAGES](state, msg) {
@@ -83,6 +84,10 @@ const mutations = {
 
     [Mutation.SET_MESSAGES](state, messages) {
         state.messages = messages;
+    },
+
+    [Mutation.SET_NEW_MESSAGE](state, {session, new_message}) {
+        Vue.set(state.new_message, session, !!new_message);
     }
 };
 
@@ -98,7 +103,7 @@ const getters = {
 
     sessions: (state) => state.sessions.map(session => state.contacts.find(contact => contact.login_id === session)),
 
-    current_session: (state) => state.contacts.find(contact => contact.login_id === state.current_session),
+    current_session: (state) => state.current_session === 'sys' ? system_session : state.contacts.find(contact => contact.login_id === state.current_session),
 
     current_contact: (state) => state.current_contact,
 
@@ -106,8 +111,9 @@ const getters = {
 
     socket_state: (state) => state.socket_state,
 
-    messages: (state) => state.messages
+    messages: (state) => state.messages,
 
+    new_message: (state) => state.new_message
 };
 
 const actions = {
@@ -135,33 +141,31 @@ const actions = {
         commit(Mutation.SET_TOKEN, token);
         commit(Mutation.SET_LOGIN_ID, authentication.login_id);
 
-        await storage.initialize(authentication.login_id);
-
-        await dispatch('update_contacts');
-        await dispatch('update_personal_info');
-        await dispatch('update_sessions');
-
-        message.socket.addEventListener('close', (ev) => {
+        message.socket.onclose = (ev) => {
             if (ev.code === 4001) {
                 return;
             }
             commit(Mutation.SET_SOCKET_STATE, 'error');
-        });
+        };
 
-        message.socket.addEventListener('message', async (ev) => {
+        message.socket.onmessage = async (ev) => {
             await dispatch('receive_message', JSON.parse(ev.data));
-        });
+        };
 
-        message.socket.addEventListener('error', () => {
+        message.socket.onerror = () => {
             commit(Mutation.SET_SOCKET_STATE, 'error');
-        });
+        };
+
+
+        await storage.initialize(authentication.login_id);
+        await dispatch('update_contacts');
+        await dispatch('update_personal_info');
+        await dispatch('update_sessions');
 
         const keepalive = () => {
-
             if (message.socket.readyState !== WebSocket.OPEN) {
                 return;
             }
-
             message.socket.send(JSON.stringify({
                 token: state.token,
                 message_id: UUIDv4(),
@@ -172,57 +176,93 @@ const actions = {
             setTimeout(keepalive, 60000);
         };
         keepalive();
-
     },
 
     async logout() {
         message.socket.close(4001, 'client logout');
     },
 
-    async upsert_session({commit}, slave_login_id) {
-        await storage.upsert_session(slave_login_id);
-        commit(Mutation.UPSERT_SESSIONS, slave_login_id);
+    async upsert_session({dispatch}, session) {
+        await storage.upsert_session(session);
+        await dispatch('update_sessions');
     },
 
-    async send_message({state, commit}, {type, content, to}) {
-        const message_id = UUIDv4();
-        const timestamp = Date.now();
-        let msg = {
-            message_id: message_id,
-            from: state.login_id,
-            sender: state.login_id,
-            to: to,
-            type: type,
-            timestamp: timestamp,
-            content: content
-        };
-        await storage.upsert_message(to, msg);
+    async send_message({state, dispatch}, msg) {
+        await storage.upsert_message_version(msg.to, msg);
         await message.send(state.token, msg);
-        commit(Mutation.UPSERT_MESSAGES, msg);
+        await dispatch('update_messages', msg.to);
+
+        const scroll = document.getElementById('message-viewer-scroll');
+        if (!scroll) {
+            return;
+        }
+        scroll.scrollTop = scroll.scrollHeight;
     },
 
-    async receive_message({state, commit}, msg) {
+    async delete_message({dispatch}, {session, msg}) {
+        await storage.delete_message(msg.message_id);
+        await dispatch('update_messages', session);
+    },
+
+    async delete_all_message({dispatch}, session) {
+        await storage.delete_all_message(session);
+        await dispatch('update_messages', session);
+    },
+
+    async delete_friend({state, dispatch, commit}) {
+        await account.delete_friend(state.token, state.current_session);
+        await storage.delete_session(state.current_session);
+        commit(Mutation.SET_CURRENT_SESSION, '');
+        await dispatch('update_contacts');
+        await dispatch('update_sessions');
+    },
+
+    async add_friend_reply({state, dispatch}, {msg, reply}) {
+        await account.add_friend_reply(state.token, msg, reply);
+        if (reply === 'ok') {
+            await dispatch('update_contacts');
+        }
+    },
+
+    async revoke_message({dispatch}, msg) {
+        const msg1 = JSON.parse(JSON.stringify(msg));
+        msg1.version++;
+        msg1.content = {};
+        msg1.type = 'message-revoke';
+        await dispatch('send_message', msg1);
+    },
+
+    async receive_message({state, dispatch, commit}, msg) {
         message.socket.send(JSON.stringify({
             token: state.token,
             message_id: msg.message_id,
             type: 'message-accept',
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            version: msg.version
         }));
-        await storage.upsert_message(msg.from, msg);
-        if (msg.from === state.current_session) {
-            commit(Mutation.UPSERT_MESSAGES, msg);
+
+        if (msg.type !== 'message-revoke') {
+            commit(Mutation.SET_NEW_MESSAGE, {session: msg.from, new_message: true});
+            const audio = document.getElementById('app-audio');
+            audio.play();
         }
 
+        if (msg.type === 'message-welcome') {
+            await dispatch('update_contacts');
+            msg.type = 'message-text';
+        }
+
+        await dispatch('upsert_session', msg.from);
+        await storage.upsert_message_version(msg.from, msg);
+
+        if (msg.from === state.current_session) {
+            await dispatch('update_messages', msg.from);
+        }
     },
 
-    async update_messages({commit}, slave_login_id) {
-        const messages = await storage.get_messages(slave_login_id);
+    async update_messages({commit}, session) {
+        const messages = await storage.get_messages(session);
         commit(Mutation.SET_MESSAGES, messages);
-    },
-
-    async delete_message({commit}, message_id) {
-        await storage.delete_message(message_id);
-        commit(Mutation.DELETE_MESSAGE, message_id);
     }
 
 };

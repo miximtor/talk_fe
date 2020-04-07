@@ -21,13 +21,14 @@ export class SessionStore {
                     name: 'message',
                     columns: {
                         session: {dataType: 'string'},
-                        message_id: {primaryKey: true},
+                        message_id: {primaryKey: true, notNull: true},
                         from: {dataType: 'string'},
                         sender: {dataType: 'string'},
                         to: {dataType: 'string'},
                         type: {dataType: 'string'},
                         timestamp: {dataType: 'number'},
-                        content: {dataType: 'object'}
+                        content: {dataType: 'object'},
+                        version: {dataType: 'number', notNull: true}
                     }
                 }
             ]
@@ -39,15 +40,39 @@ export class SessionStore {
         return (await this.db.select({from: 'session'})).map(session => session.login_id);
     }
 
-    async upsert_session(slave_login_id) {
+    async upsert_session(session) {
         await this.db.insert({
             into: 'session',
             upsert: true,
-            values: [{login_id: slave_login_id}]
+            values: [{login_id: session}]
         })
     }
 
-    async upsert_message(session, message) {
+    async delete_session(session) {
+        await this.db.remove({
+            from: 'session',
+            where: {
+                login_id: session
+            }
+        });
+        await this.db.remove({
+            from: 'message',
+            where: {
+                session: session
+            }
+        });
+    }
+
+    async upsert_message_version(session, message) {
+        const result = await this.db.select({
+            from: 'message',
+            where: {
+                message_id: message.message_id
+            }
+        });
+        if (result.length > 0 && message.version <= result[0].version) {
+            return false;
+        }
         await this.db.insert({
             into: 'message',
             upsert: true,
@@ -55,6 +80,25 @@ export class SessionStore {
                 session: session,
                 ...message
             }]
+        });
+        return true;
+    }
+
+    async delete_message(message_id) {
+        await this.db.remove({
+            from: 'message',
+            where: {
+                message_id: message_id
+            }
+        })
+    }
+
+    async delete_all_message(session) {
+        await this.db.remove({
+            from: 'message',
+            where: {
+                session: session
+            }
         });
     }
 
@@ -73,14 +117,7 @@ export class SessionStore {
         return messages;
     }
 
-    async delete_message(message_id) {
-        await this.db.remove({
-            from: 'message',
-            where: {
-                message_id: message_id
-            }
-        });
-    }
+
 }
 
 export const storage = new SessionStore();

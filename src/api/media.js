@@ -14,11 +14,7 @@ class Media {
 
     async upload(name, content, progress) {
         console.log(progress);
-        return (await this.oss.put(name, content, {
-            progress: (p) => {
-                console.log(p);
-            }
-        })).url;
+        return (await this.oss.put(name, content)).url;
     }
 }
 

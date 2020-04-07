@@ -1,71 +1,70 @@
 <template>
-    <modal name="forget-password-dialog" styles="display: flex; flex-direction: column" height="auto">
+    <modal name="forget-password-dialog" styles="display: flex; flex-direction: column" height="auto"
+           @before-open="on_before_open">
         <DialogTop name="forget-password-dialog" title="找回密码"></DialogTop>
 
         <div id="forget-password">
-            <div v-if="current_page === 0">
-                <iv-form ref="forget_password_form"
-                         :label-width="80"
-                         label-position="left"
-                         :model="forget_password_form"
-                         :rules="forget_password_validate_rules">
-                    <iv-form-item label="用户名" prop="login_id">
-                        <iv-input
-                                type="text"
-                                maxlength="20"
-                                v-model="forget_password_form.login_id"
-                        >
-                        </iv-input>
-                    </iv-form-item>
-                    <div style="margin-bottom: 24px">
-                        <span style="width: 80px;margin-bottom: 24px;padding: 10px 12px 10px 0">安全问题1</span>
-                        <span>{{forget_password_form.question1}}</span>
-                    </div>
-                    <iv-form-item label="回答" prop="answer1">
-                        <iv-input v-model="forget_password_form.answer1"></iv-input>
-                    </iv-form-item>
-                    <div style="margin-bottom: 24px">
-                        <span style="width: 80px;margin-bottom: 24px;padding: 10px 12px 10px 0">安全问题2</span>
-                        <span>{{forget_password_form.question2}}</span>
-                    </div>
-                    <iv-form-item label="回答" prop="answer2">
-                        <iv-input v-model="forget_password_form.answer2"></iv-input>
-                    </iv-form-item>
-                    <div style="margin-bottom: 24px">
-                        <span style="width: 80px;margin-bottom: 24px;padding: 10px 12px 10px 0">安全问题3</span>
-                        <span>{{forget_password_form.question3}}</span>
-                    </div>
-                    <iv-form-item label="回答" prop="answer3">
-                        <iv-input v-model="forget_password_form.answer3"></iv-input>
-                    </iv-form-item>
-                </iv-form>
-            </div>
+            <iv-form label-position="left" inline style="display: flex" @submit.native.prevent=""
+                     v-show="!question_show">
+                <iv-form-item style="flex-grow: 1">
+                    <iv-input v-model="form.login_id"></iv-input>
+                </iv-form-item>
+                <iv-form-item>
+                    <iv-button type="primary" @click.prevent="on_click_find_back">查找账号</iv-button>
+                </iv-form-item>
+            </iv-form>
+
+            <iv-form label-position="left"
+                     @submit.native.prevent=""
+                     :label-width="80"
+                     v-show="question_show"
+                     :model="form"
+                     :rules="rules"
+                     ref="form">
+                <iv-form-item label="用户名">
+                    <span>{{form.login_id}}</span>
+                </iv-form-item>
+                <iv-form-item label="问题一">
+                    <span>{{form.question1}}</span>
+                </iv-form-item>
+                <iv-form-item label="回答" prop="answer1">
+                    <iv-input v-model="form.answer1"></iv-input>
+                </iv-form-item>
+                <iv-form-item label="问题二">
+                    <span>{{form.question2}}</span>
+                </iv-form-item>
+                <iv-form-item label="回答" prop="answer2">
+                    <iv-input v-model="form.answer2"></iv-input>
+                </iv-form-item>
+                <iv-form-item label="问题三">
+                    <span>{{form.question2}}</span>
+                </iv-form-item>
+                <iv-form-item label="回答" prop="answer2">
+                    <iv-input v-model="form.answer3"></iv-input>
+                </iv-form-item>
+                <iv-form-item label="密码" prop="login_password">
+                    <iv-input type="password" v-model="form.login_password"></iv-input>
+                </iv-form-item>
+                <iv-form-item label="确认密码" prop="login_password_confirm">
+                    <iv-input type="password" v-model="form.login_password_confirm"></iv-input>
+                </iv-form-item>
+                <iv-button long type="primary" @click="on_submit_find_back">立即重置</iv-button>
+            </iv-form>
         </div>
 
-        <div style="display: flex;justify-content: center; padding: 20px 20px">
-            <iv-button-group shape="circle">
-                <iv-button type="primary" @click="current_page--" :disabled="current_page<=0"
-                           style="height: 40px; font-size: 16px">上一步
-                </iv-button>
-                <iv-button type="primary" @click.native="step(current_page)" style="height: 40px; font-size: 16px">
-                    {{current_page === 1?'立即重置':'下一步'}}
-                </iv-button>
-            </iv-button-group>
-        </div>
     </modal>
 </template>
 
 <script>
-    import {axios, handle_response} from "@/util/connection";
     import DialogTop from "@/components/dialog/DialogTop";
+    import {account} from "@/api/account";
 
     export default {
         name: "ForgetPasswordDialog",
         components: {DialogTop},
         data() {
             return {
-                current_page: 0,
-                forget_password_form: {
+                form: {
                     login_id: '',
                     question1: '',
                     question2: '',
@@ -73,70 +72,85 @@
                     answer1: '',
                     answer2: '',
                     answer3: '',
+                    login_password: '',
+                    login_password_confirm: ''
                 },
-                forget_password_validate_rules: {
-                    login_id: [{required: true, validator: this.login_id_validator, trigger: 'blur'}],
-                    answer1: [{required: true, validator: this.answer1_validator, trigger: 'blur'}],
-                    answer2: [{required: true, validator: this.answer2_validator, trigger: 'blur'}],
-                    answer3: [{required: true, validator: this.answer3_validator, trigger: 'blur'}]
+                rules: {
+                    answer1: [{required: true, message: '请输入回答', trigger: 'blur'}],
+                    answer2: [{required: true, message: '请输入回答', trigger: 'blur'}],
+                    answer3: [{required: true, message: '请输入回答', trigger: 'blur'}],
+                    login_password: [{required: true, validator: this.login_password_validator, trigger: 'blur'}],
+                    login_password_confirm: [{
+                        required: true,
+                        validator: this.login_password_confirm_validator,
+                        trigger: 'blur'
+                    }],
                 },
+                question_show: false,
 
             };
         },
         methods: {
-            async login_id_validator(rule, value, callback) {
+            on_before_open() {
                 let self = this;
-                const questions = (await axios.post('/account/getsecurityquestion', {login_id: value}).then(handle_response)).data;
-                self.forget_password_form.question1 = questions.question1;
-                self.forget_password_form.question2 = questions.question2;
-                self.forget_password_form.question3 = questions.question3;
-                return callback();
+                self.form = {
+                    login_id: '',
+                    question1: '',
+                    question2: '',
+                    question3: '',
+                    answer1: '',
+                    answer2: '',
+                    answer3: '',
+                    login_password: '',
+                    login_password_confirm: ''
+                };
+                self.question_show = false;
             },
 
-            async answer1_validator(rule, value, callback) {
+            async on_click_find_back() {
                 let self = this;
-                if (value.length === 0) {
-                    return callback(new Error('请回答问题'));
+                try {
+                    if (self.form.login_id.length <= 0) {
+                        throw Error('请输入用户名');
+                    }
+                    const questions = await account.get_security_question(self.form.login_id);
+                    self.form.question1 = questions.question1;
+                    self.form.question2 = questions.question2;
+                    self.form.question3 = questions.question3;
+                    self.question_show = true;
+                } catch (e) {
+                    self.$modal.show('error-dialog', {
+                        title: '错误',
+                        content: e.message
+                    });
                 }
-                await self.validate_answer(1, value);
-                return callback();
             },
 
-            async answer2_validator(rule, value, callback) {
-                let self = this;
-                if (value.length === 0) {
-                    return callback(new Error('请回答问题'));
+            async login_password_validator(rule, value, callback) {
+                let login_password_regex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$ %^&*-.]).{8,20}$/gm;
+                if (!value.match(login_password_regex)) {
+                    throw new Error('必须包含大/小写字母，数字、特殊字符（$?!@$%^&*-.）长度8-20个字符');
                 }
-                await self.validate_answer(1, value);
                 return callback();
             },
 
-            async answer3_validator(rule, value, callback) {
-                let self = this;
-                if (value.length === 0) {
-                    return callback(new Error('请回答问题'));
-                }
-                await self.validate_answer(1, value);
-                return callback();
+            async login_password_confirm_validator(rule, value, callback) {
+                return value === this.form.login_password ? callback() : callback(new Error('与密码不一致'));
             },
 
-            async validate_answer(index, value) {
+            async on_submit_find_back() {
                 let self = this;
-                await axios.post('/account/validatesecurityquestion', {
-                    login_id: self.forget_password_form.login_id,
-                    index: index,
-                    answer: value
-                }).then(handle_response);
-            },
-
-            async step(n) {
-                let self = this;
-                if (n === 0) {
-                    self.$refs['forget_password_validator'].validate(valid => {
-                       if (!valid) {
-                           return;
-                       }
-                       self.current_page++;
+                await self.$refs.form.validate();
+                try {
+                    await account.reset_password(self.form);
+                    self.$Notice.info({
+                        title: '密码重置成功'
+                    });
+                    self.$modal.hide('forget-password-dialog');
+                } catch (e) {
+                    self.$modal.show('error-dialog', {
+                        title: '重置失败',
+                        content: e.message
                     });
                 }
             }

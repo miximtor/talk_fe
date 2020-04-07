@@ -1,14 +1,12 @@
 <template>
     <div id="contact_info">
-        <PerfectScrollbar>
-            <iv-list>
-                <iv-list-item v-for="(contact, index) of contacts" :key="index">
-                    <iv-button class="contact_info_item" @click.native="on_contact_click(contact)">
-                        <iv-avatar size="50" shape="square" :src="contact.avatar"></iv-avatar>
-                        <span style="margin-left: 20px">{{contact.nick}}</span>
-                    </iv-button>
-                </iv-list-item>
-            </iv-list>
+        <PerfectScrollbar style="height: 575px">
+            <div v-for="(contact, index) of contacts" :key="index" :style="get_styles(contact)">
+                <iv-button class="contact_info_item" @click="set_current_contact(contact)">
+                    <iv-avatar size="50" shape="square" :src="contact.avatar"></iv-avatar>
+                    <span style="margin-left: 20px">{{contact.nick}}</span>
+                </iv-button>
+            </div>
         </PerfectScrollbar>
     </div>
 </template>
@@ -21,7 +19,8 @@
 
         computed: {
             ...mapGetters({
-                contacts: 'contacts'
+                contacts: 'contacts',
+                current_contact: 'current_contact'
             })
         },
 
@@ -32,19 +31,25 @@
             }),
 
 
-            on_contact_click(contact) {
+            get_styles(contact) {
                 let self = this;
-                self.set_current_contact(contact);
+                if (!self.current_contact || contact.login_id !== self.current_contact.login_id) {
+                    return 'background: rgba(0, 0, 0, 0)'
+                } else {
+                    return 'background: rgb(58, 63, 69)'
+                }
+            },
+
+            on_leave() {
+                let self = this;
+                self.set_current_contact(null);
             }
+
         }
     }
 </script>
 
 <style scoped>
-
-    .ps {
-        height: 575px;
-    }
 
     #contact_info {
         display: flex;
@@ -52,12 +57,7 @@
         flex-grow: 1;
     }
 
-    #contact_info .ivu-list-item {
-        padding: 0;
-        border-bottom: rgba(0, 0, 0, 0);
-    }
-
-    .contact_info_item {
+    .contact_info_item, .contact_info_item:hover, .contact_info_item:focus, .contact_info_item:active {
         height: 100%;
         width: 100%;
         display: flex;
@@ -68,18 +68,6 @@
         background: rgba(0, 0, 0, 0);
         font-size: 16px;
         font-weight: lighter;
-    }
-
-    .contact_info_item:hover {
-        box-shadow: none;
-        background: rgba(0, 0, 0, 0);
-        border-color: rgba(0, 0, 0, 0);
-        color: white;
-    }
-
-    .contact_info_item:focus {
-        background: rgb(58, 63, 69);
-        color: white;
         box-shadow: none;
     }
 

@@ -14,16 +14,20 @@
         <div id="add-friend-result">
             <span id="add-friend-result__head">为您找到{{search_accounts.length}}个账号</span>
             <PerfectScrollbar style="height: 300px" v-if="search_accounts.length > 0">
-                <div class="add-friend-result__item" v-for="(account, index) of search_accounts" :key="index">
-                    <iv-avatar shape="square" size="80" :src="account.avatar"></iv-avatar>
+                <div class="add-friend-result__item" v-for="(acc, index) of search_accounts" :key="index">
+                    <iv-avatar shape="square" size="80" :src="acc.avatar"></iv-avatar>
                     <div style="flex-grow: 1; display: flex; flex-direction: column; margin-left: 10px; justify-content: space-between">
-                        <span>用户名：{{account.login_id}}</span>
-                        <span>昵称：{{account.nick}}</span>
-                        <span>邮箱：{{account.email || '无'}}</span>
-                        <span>电话：{{account.phone || '无'}}</span>
+                        <span>用户名：{{acc.login_id}}</span>
+                        <span>昵称：{{acc.nick}}</span>
+                        <span>邮箱：{{acc.email || '无'}}</span>
+                        <span>电话：{{acc.phone || '无'}}</span>
                     </div>
                     <div style="flex-grow: 1; display: flex; flex-direction: row-reverse">
-                        <iv-button type="primary" @click="add_friend(account.login_id)">添加好友</iv-button>
+                        <iv-button type="primary"
+                                   @click="add_friend(acc)"
+                                   :disabled="acc.applied">
+                            添加好友
+                        </iv-button>
                     </div>
                 </div>
             </PerfectScrollbar>
@@ -49,7 +53,8 @@
 
         computed: {
             ...mapGetters({
-                token: 'token'
+                token: 'token',
+                login_id: 'login_id'
             })
         },
 
@@ -62,8 +67,13 @@
                 self.search_accounts = await account.search(self.token, self.key_text);
             },
 
-            async add_friend(login_id) {
-                console.log(login_id);
+            async add_friend(acc) {
+                let self = this;
+                await account.add_friend(self.token,self.login_id, acc.login_id);
+                self.$modal.hide('add-friend-dialog');
+                self.$Notice.info({
+                    title: '已发送好友申请'
+                });
             },
 
             on_before_open() {

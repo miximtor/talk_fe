@@ -1,7 +1,7 @@
 export const axios = require('axios').default.create({
     baseURL: 'https://talk.maxtorm.wtf/bin/',
     headers: {'content-type': 'application/json'},
-    timeout: 1000
+    timeout: 4000
 });
 
 export function handle_response(res) {

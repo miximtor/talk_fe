@@ -7,7 +7,7 @@
             <div slot="content" id="personal_preference_menu">
                 <iv-list>
                     <iv-list-item>
-                        <iv-button class="personal_preference_menu_item" ghost type="text">
+                        <iv-button class="personal_preference_menu_item" ghost type="text" @click="$modal.show('update-personal-info', personal_info)">
                             <iv-icon type="md-contact"/>
                             修改信息
                         </iv-button>
@@ -40,16 +40,18 @@
             </div>
         </iv-poptip>
         <AddFriendDialog></AddFriendDialog>
+        <UpdatePersonalInfoDialog></UpdatePersonalInfoDialog>
     </div>
 </template>
 
 <script>
     import {mapGetters} from 'vuex';
     import AddFriendDialog from '@/components/dialog/AddFriendDialog';
+    import UpdatePersonalInfoDialog from '@/components/dialog/UpdatePersonalInfoDialog';
 
     export default {
         name: "PersonalInfo",
-        components: {AddFriendDialog},
+        components: {AddFriendDialog, UpdatePersonalInfoDialog},
 
         computed: {
             ...mapGetters({

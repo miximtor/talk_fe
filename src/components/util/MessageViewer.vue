@@ -5,12 +5,13 @@
         <PerfectScrollbar id="message-viewer-scroll"
                           ref="message-viewer-scroll"
                           :options="{wheelSpeed : 2}"
-                          :style="`height: ${height}px; width: 100%`">
-            <div class="message-viewer-item"
-                 :id="`message-${message.message_id}`"
+                          :style="`height: ${height}px; width: 100%`" @ps-y-reach-end="on_scroll_reach_end">
+            <div :id="`message-${message.message_id}`"
                  v-for="(message, index) of messages"
-                 :key="index">
-                <div :class="`message-wrapper ${get_message_from(message)}`"  >
+                 :key="index"
+                 class="message-viewer-item">
+                <div :class="`message-wrapper ${get_message_from(message)}`"
+                     v-if="message.type !== 'message-delete' && message.type !== 'message-revoke'">
                     <iv-avatar size="40"
                                shape="square"
                                :src="get_message_avatar(message)"
@@ -20,15 +21,19 @@
                         <div :class="`message-content-time ${get_message_from(message)}`">
                             <span>{{fmt(message.timestamp)}}</span>
                         </div>
-                        <div :class="`message-content-wrapper ${get_message_from(message)}`" @contextmenu.prevent.stop="$refs['message_menu'].open($event, message)">
+
+                        <div :class="`message-content-wrapper ${get_message_from(message)}`"
+                             @contextmenu.prevent.stop="$refs['message_menu'].open($event, message)">
                             <div v-if="message.type === 'message-text'"
                                  class="message-content-content text">
                                 <span>{{message.content.text}}</span>
                             </div>
+
                             <div v-if="message.type === 'message-voice'"
                                  class="message-content-content voice">
                                 <audio controls :src="message.content.url"></audio>
                             </div>
+
                             <div v-if="message.type === 'message-file'"
                                  class="message-content-content file"
                                  @click="download(message.content.name, message.content.url)">
@@ -38,7 +43,30 @@
                                 </div>
                                 <iv-icon class="message-content-content file-icon" type="md-document"/>
                             </div>
+
+                            <div v-if="message.type === 'message-add-friend'"
+                                 class="message-content-content add-friend">
+                                <span>
+                                    {{message.content.who}} 想要添加你为好友
+                                </span>
+                                <div class="message-content-content add-friend__buttons">
+                                    <iv-button-group>
+                                        <iv-button @click="add_friend_reply({msg: message, reply: 'ok'})" :disabled="message.content.state !== 'wait'">同意</iv-button>
+                                        <iv-button @click="add_friend_reply({msg: message, reply: 'refuse'})" :disabled="message.content.state !== 'wait'">拒绝</iv-button>
+                                        <iv-button @click="add_friend_reply({msg: message, reply: 'blacklist'})" :disabled="message.content.state !== 'wait'">拉黑</iv-button>
+                                    </iv-button-group>
+                                </div>
+                            </div>
+
+                            <div v-if="message.type === 'message-add-friend-refuse'"
+                                class="message-content-content add-friend">
+                                <span>
+                                    {{message.content.who}} 拒绝了你的好友申请
+                                </span>
+                            </div>
+
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -47,18 +75,20 @@
             <template slot-scope="scope">
                 <li v-if="scope.data">
                     <button class="message-context-button"
-                            @click.prevent="on_delete_message(scope.data.message_id)">
+                            @click.prevent="delete_message({session: current_session.login_id, msg: scope.data})">
                         删除
                     </button>
                 </li>
                 <li v-if="scope.data">
                     <button v-show="get_message_from(scope.data) === 'self'"
-                            class="message-context-button">
+                            class="message-context-button"
+                            @click="revoke_message(scope.data)">
                         撤回
                     </button>
                 </li>
                 <li v-if="!scope.data">
-                    <button class="message-context-button">
+                    <button class="message-context-button"
+                            @click="delete_all_message(current_session.login_id)">
                         删除所有消息
                     </button>
                 </li>
@@ -68,29 +98,48 @@
 </template>
 
 <script>
-    import {mapGetters, mapActions} from 'vuex';
+    import {mapGetters, mapActions, mapMutations} from 'vuex';
+
     const strftime = require('strftime');
 
     import VueContext from 'vue-context';
     import 'vue-context/src/sass/vue-context.scss';
 
-
     export default {
         name: "MessageViewer",
-        props: ['height', 'session'],
-        components: { VueContext },
+        props: ['height'],
+        components: {VueContext},
         computed: {
             ...mapGetters({
                 personal_info: 'personal_info',
-                messages: 'messages'
+                messages: 'messages',
+                current_session: 'current_session',
             })
+        },
+
+        mounted() {
+            let self = this;
+            self.scroll_bottom();
         },
 
         methods: {
 
-            ...mapActions({
-               delete_message: 'delete_message'
+            ...mapMutations({
+                set_new_message: 'set_new_message'
             }),
+
+            ...mapActions({
+                delete_message: 'delete_message',
+                revoke_message: 'revoke_message',
+                delete_all_message: 'delete_all_message',
+                add_friend_reply: 'add_friend_reply'
+            }),
+
+            scroll_bottom() {
+                let self = this;
+                const scroll = self.$refs['message-viewer-scroll'].$el;
+                scroll.scrollTop = scroll.scrollHeight;
+            },
 
             fmt(timestamp) {
                 const DATE_FMT_STR = '%Y-%m-%d %H:%M:%S';
@@ -112,16 +161,7 @@
 
             get_message_avatar(message) {
                 let self = this;
-                return message.sender === self.personal_info.login_id ? self.personal_info.avatar : self.session.avatar;
-            },
-
-            scrollToMessage(message_id) {
-                const message = document.getElementById(`message-${message_id}`);
-                if (message === null) {
-                    return;
-                }
-                const scroll = document.getElementById('message-viewer-scroll');
-                scroll.scrollTop = message.offsetTop;
+                return message.sender === self.personal_info.login_id ? self.personal_info.avatar : self.current_session.avatar;
             },
 
             file_size(size) {
@@ -134,10 +174,13 @@
                 return size.toFixed(1) + ' ' + units[i];
             },
 
-            async on_delete_message(message_id) {
+            on_scroll_reach_end() {
                 let self = this;
-                await self.delete_message(message_id);
-            }
+                self.set_new_message({
+                    session: self.current_session.login_id,
+                    new_message: false
+                });
+            },
 
         }
     }
@@ -157,6 +200,11 @@
         padding: 0;
         margin-top: 10px;
         margin-bottom: 10px;
+    }
+
+    .message-viewer-item.invisible {
+        height: 0;
+        margin: 0;
     }
 
     .message-wrapper {
@@ -211,15 +259,12 @@
     .message-content-wrapper {
         display: flex;
         flex-grow: 1;
-        background: rgb(178, 226, 129);
-        padding: 10px;
-        border-radius: 5px;
         margin-top: 5px;
         width: auto;
         height: auto;
         max-width: 400px;
         max-height: 300px;
-        overflow-y: hidden;
+        overflow: hidden;
     }
 
     .message-content-wrapper.others {
@@ -228,6 +273,12 @@
 
     .message-content-wrapper.self {
         align-self: flex-end;
+    }
+
+    .message-content-content.text {
+        background: rgb(178, 226, 129);
+        border-radius: 5px;
+        padding: 10px;
     }
 
     .message-content-content.voice audio {
@@ -243,7 +294,9 @@
 
     .message-content-content.file {
         display: flex;
-        width: 200px;
+        padding: 10px;
+        border: 1px solid #657180;
+        border-radius: 10px;
     }
 
     .message-content-content.file-icon {
@@ -259,12 +312,26 @@
     .message-content-content.file-name {
         font-size: 16px;
         font-weight: bold;
-        max-width: 150px;
+        width: 200px;
         overflow-x: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+        direction: ltr;
     }
 
     .message-content-content.file-size {
         font-size: 10px;
+        margin-top: 5px;
+    }
+
+    .message-content-content.add-friend {
+        background: lightgray;
+        border-radius: 5px;
+        padding: 10px;
+    }
+
+    .message-content-content.add-friend__buttons {
+        margin-top: 10px;
     }
 
     .message-context-button {
