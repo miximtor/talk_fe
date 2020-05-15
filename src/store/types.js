@@ -11,3 +11,5 @@ export const SET_MESSAGES = 'set_messages';
 export const UPSERT_MESSAGES = 'upsert_messages';
 export const DELETE_MESSAGE = 'delete_message';
 export const SET_NEW_MESSAGE = 'set_new_message';
+export const CLEAR_STATE = 'clear_state';
+export const SET_MEDIA_STATE = 'set_media_state';

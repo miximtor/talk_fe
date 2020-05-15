@@ -9,6 +9,7 @@ import {system_session} from "@/api/account";
 import {v4 as UUIDv4} from 'uuid';
 
 import * as Mutation from "@/store/types";
+import {PeerStates} from "@/util/connection";
 
 Vue.use(Vuex);
 
@@ -25,7 +26,8 @@ const state = {
     current_session: '',
     current_contact: null,
     messages: [],
-    new_message: {}
+    new_message: {},
+    media_state: 'uninitialized'
 };
 
 const mutations = {
@@ -88,6 +90,24 @@ const mutations = {
 
     [Mutation.SET_NEW_MESSAGE](state, {session, new_message}) {
         Vue.set(state.new_message, session, !!new_message);
+    },
+
+    [Mutation.CLEAR_STATE](state) {
+        state.login_id = '';
+        state.token = '';
+        state.socket = null;
+        state.socket_state = 'normal';
+        state.personal_info = null;
+        state.contacts = [];
+        state.sessions = [];
+        state.current_session = '';
+        state.current_contact = null;
+        state.messages = [];
+        state.new_message = {};
+    },
+
+    [Mutation.SET_MEDIA_STATE](state, media_state) {
+        state.media_state = media_state;
     }
 };
 
@@ -113,7 +133,9 @@ const getters = {
 
     messages: (state) => state.messages,
 
-    new_message: (state) => state.new_message
+    new_message: (state) => state.new_message,
+
+    media_state: (state) => state.media_state
 };
 
 const actions = {
@@ -136,6 +158,7 @@ const actions = {
     async login({commit, dispatch}, authentication) {
 
         const [token, socket] = await account.login(authentication);
+
         message.socket = socket;
         commit(Mutation.SET_SOCKET_STATE, 'normal');
         commit(Mutation.SET_TOKEN, token);
@@ -178,8 +201,10 @@ const actions = {
         keepalive();
     },
 
-    async logout() {
+    async logout({commit}) {
         message.socket.close(4001, 'client logout');
+        PeerStates.peer.destroy();
+        commit(Mutation.CLEAR_STATE);
     },
 
     async upsert_session({dispatch}, session) {

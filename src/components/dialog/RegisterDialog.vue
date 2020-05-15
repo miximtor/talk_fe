@@ -204,7 +204,10 @@
 
             async step(n) {
                 let self = this;
-                await self.$refs[`register_form${n}`].validate();
+                const valid = await self.$refs[`register_form${n}`].validate();
+                if (!valid) {
+                    return;
+                }
 
                 if (n < 2) {
                     self.current_page = n + 1;

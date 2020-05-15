@@ -14,7 +14,7 @@
                         </button>
                         <div slot="content">
                             <iv-button-group :vertical="true" style="width: 100%">
-                                <iv-button long>发起视频通话</iv-button>
+                                <iv-button long @click="on_media_call">发起视频通话</iv-button>
                                 <iv-button long @click="delete_friend">删除好友</iv-button>
                                 <iv-button long>加入黑名单</iv-button>
                             </iv-button-group>
@@ -70,7 +70,7 @@
 
         data() {
             return {
-                content_height: 0
+                content_height: 0,
             };
         },
 
@@ -138,6 +138,11 @@
                     content: content,
                     version: 1
                 };
+            },
+
+            on_media_call() {
+                let self = this;
+                self.$emit('media-call', self.current_session.login_id);
             }
 
         }

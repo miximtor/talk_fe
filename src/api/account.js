@@ -39,6 +39,35 @@ class Account {
         return (await axios.post('/relation/search', {token: token, key_text: key_text}).then(handle_response)).data;
     }
 
+    async add_friend(token, master_login_id, slave_login_id) {
+        await axios.post('/relation/addfriend', {token: token,master_login_id: master_login_id, slave_login_id: slave_login_id});
+    }
+
+    async update_personal_info(token, form) {
+        await axios.post('/account/updatepersonalinfo', {token: token, ...form});
+    }
+
+    async get_security_question(login_id) {
+        return (await axios.post('/account/getsecurityquestion', {login_id: login_id}).then(handle_response)).data;
+    }
+
+    async reset_password(security_questions) {
+        return (await axios.post('/account/resetpassword', {...security_questions}).then(handle_response)).data;
+    }
+
+    async delete_friend(token, slave_login_id) {
+        return await axios.post('/relation/deletefriend', {token: token, slave_login_id: slave_login_id}).then(handle_response);
+    }
+
+    async add_friend_reply(token, message, state) {
+        await axios.post('/relation/addfriendreply', {token: token, message: message, state: state})
+    }
+
 }
 
 export const account = new Account();
+export const system_session = {
+    nick: '系统消息',
+    login_id: 'sys',
+    avatar: 'https://pic.imgdb.cn/item/5e80a0c0504f4bcb04671ace.png'
+};

@@ -4,8 +4,7 @@
         <Info
                 ref="info"
                 @logout="on_logout"
-                @menu-change="(name) => {this.contact_visible = name === 'contacts'}"
-                @menu_click="on_menu_click">
+                @menu-change="(name) => {this.contact_visible = name === 'contacts'}">
         </Info>
 
         <div v-if="contact_visible">
@@ -14,27 +13,35 @@
             </ContactDetail>
         </div>
         <div v-else>
-            <Talk></Talk>
+            <Talk @media-call="on_media_call"></Talk>
         </div>
 
+        <MediaCallDialog></MediaCallDialog>
     </div>
+
 </template>
 
 <script>
     import Info from "@/components/info/Info";
     import ContactDetail from "@/components/talk/ContactDetail";
     import Talk from "@/components/talk/Talk";
+    import {PeerStates} from "@/util/connection";
+    import Peer from 'peerjs';
 
     import {mapActions, mapMutations, mapGetters} from 'vuex';
+
+    import MediaCallDialog from "@/components/dialog/MediaCallDialog";
 
     export default {
 
         name: "Chat",
-        components: {ContactDetail, Info, Talk},
+        components: {ContactDetail, Info, Talk, MediaCallDialog},
         computed: {
             ...mapGetters({
                 current_contact: 'current_contact',
-                socket_state: 'socket_state'
+                socket_state: 'socket_state',
+                login_id: 'login_id',
+                media_state: 'media_state'
             })
         },
 
@@ -49,6 +56,52 @@
                     self.$emit('connection-close');
                 }
             }
+        },
+
+        mounted() {
+            let self = this;
+            PeerStates.peer = new Peer(self.login_id, {
+                host: 'talk.maxtorm.wtf',
+                path: 'voip',
+                secure: true,
+                port: 443,
+                config: {
+                    'iceServers': [
+                        {
+                            'url': 'turn:turn.talk.maxtorm.wtf',
+                            'username': 'wetalk',
+                            'credential': 'wetalk',
+                            credentialType: "password"
+                        }
+                    ]
+                },
+                debug: 3
+            });
+
+            self.set_media_state('initialized');
+
+            PeerStates.peer.on('connection', data_conn => {
+                if (self.media_state !== 'initialized') {
+                    data_conn.send('refuse');
+                    setTimeout(()=>{data_conn.close()}, 1000);
+                    return;
+                }
+
+                data_conn.on('close', () => {
+                    self.$modal.hide('media-call-dialog');
+                });
+
+                data_conn.on('error', () => {
+                    self.$modal.hide('media-call-dialog');
+                });
+
+                self.$modal.show('media-call-dialog', {
+                    type: 'passive',
+                    data_conn: data_conn,
+                    who: data_conn.peer
+                });
+
+            });
         },
 
         data() {
@@ -67,7 +120,8 @@
             }),
 
             ...mapMutations({
-                set_current_session: 'set_current_session'
+                set_current_session: 'set_current_session',
+                set_media_state: 'set_media_state'
             }),
 
             async on_logout() {
@@ -86,15 +140,13 @@
                 self.contact_visible = false;
             },
 
-            on_menu_click(name) {
+            async on_media_call(who) {
                 let self = this;
-                if (name === 'modify_personal_info') {
-                    self.modify_personal_info_form = JSON.parse(JSON.stringify(self.personal_info));
-                    self.modify_personal_info_modal_visible = true;
-                } else {
-                    self.$emit('menu_click', name);
-                }
-            },
+                self.$modal.show('media-call-dialog', {
+                    type: 'initiative',
+                    who: who
+                });
+            }
 
         }
     }

@@ -47,10 +47,6 @@
                 upsert_session: 'upsert_session'
             }),
 
-            on_menu_click(name) {
-                let self = this;
-                self.$emit('menu_click', name);
-            },
 
             change_menu_selection(name) {
                 let self = this;

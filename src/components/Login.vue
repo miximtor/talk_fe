@@ -74,8 +74,11 @@
             async on_login() {
                 let self = this;
                 try {
+                    const valid = await self.$refs['login_form'].validate();
+                    if (!valid) {
+                        return;
+                    }
                     self.$Spin.show();
-                    await self.$refs['login_form'].validate();
                     await self.do_login(self.login_form);
                     self.$emit('login-success');
                 } catch (e) {

@@ -4,7 +4,7 @@ import App from './App.vue'
 import store from './store';
 
 import {Form, FormItem, Input, Icon, Button, ButtonGroup, Upload, Spin, Divider, Avatar, Menu, MenuItem, Poptip} from "view-design";
-import {List, Tabs, TabPane, Notice, Badge} from 'view-design';
+import {List, Tabs, TabPane, Notice, Badge, Modal} from 'view-design';
 
 import 'view-design/dist/styles/iview.css';
 
@@ -17,6 +17,7 @@ import VModal from 'vue-js-modal'
 Vue.config.productionTip = false;
 Vue.prototype.$Spin = Spin;
 Vue.prototype.$Notice = Notice;
+Vue.prototype.$IModal = Modal;
 
 Vue.component('iv-form', Form);
 Vue.component('iv-form-item', FormItem);

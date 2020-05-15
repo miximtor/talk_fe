@@ -1,5 +1,5 @@
 <template>
-    <modal name="forget-password-dialog" styles="display: flex; flex-direction: column" height="auto"
+    <modal name="forget-password-dialog" styles="display: flex; flex-direction: column" height="auto" :clickToClose="false"
            @before-open="on_before_open">
         <DialogTop name="forget-password-dialog" title="找回密码"></DialogTop>
 

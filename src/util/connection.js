@@ -12,3 +12,7 @@ export function handle_response(res) {
     }
 }
 
+export const PeerStates = {
+  peer: null,
+};
+
