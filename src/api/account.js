@@ -59,6 +59,10 @@ class Account {
         return await axios.post('/relation/deletefriend', {token: token, slave_login_id: slave_login_id}).then(handle_response);
     }
 
+    async blacklist_friend(token, slave_login_id) {
+        return await axios.post('/relation/blacklistfriend', {token: token, slave_login_id: slave_login_id}).then(handle_response);
+    }
+
     async add_friend_reply(token, message, state) {
         await axios.post('/relation/addfriendreply', {token: token, message: message, state: state})
     }

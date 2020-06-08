@@ -25,12 +25,6 @@
                         </iv-button>
                     </iv-list-item>
                     <iv-list-item>
-                        <iv-button class="personal_preference_menu_item" ghost type="text">
-                            <iv-icon type="md-people"/>
-                            创建群聊
-                        </iv-button>
-                    </iv-list-item>
-                    <iv-list-item>
                         <iv-button class="personal_preference_menu_item" ghost type="text" @click="()=>this.$emit('logout')">
                             <iv-icon type="md-power"/>
                             退出

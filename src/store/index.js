@@ -242,6 +242,14 @@ const actions = {
         await dispatch('update_sessions');
     },
 
+    async blacklist_friend({state, dispatch, commit}) {
+        await account.blacklist_friend(state.token, state.current_session);
+        await storage.delete_session(state.current_session);
+        commit(Mutation.SET_CURRENT_SESSION, '');
+        await dispatch('update_contacts');
+        await dispatch('update_sessions');
+    },
+
     async add_friend_reply({state, dispatch}, {msg, reply}) {
         await account.add_friend_reply(state.token, msg, reply);
         if (reply === 'ok') {

@@ -16,7 +16,7 @@
                             <iv-button-group :vertical="true" style="width: 100%">
                                 <iv-button long @click="on_media_call">发起视频通话</iv-button>
                                 <iv-button long @click="delete_friend">删除好友</iv-button>
-                                <iv-button long>加入黑名单</iv-button>
+                                <iv-button long @click="blacklist_friend">加入黑名单</iv-button>
                             </iv-button-group>
                         </div>
                     </iv-poptip>
@@ -87,7 +87,8 @@
 
             ...mapActions({
                 send_message: 'send_message',
-                delete_friend: 'delete_friend'
+                delete_friend: 'delete_friend',
+                blacklist_friend: 'blacklist_friend'
             }),
 
             on_resize() {
